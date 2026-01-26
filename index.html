@@ -3,137 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jardim Pixel Interativo</title>
+    <title>Jardim Pixel - Versão Avançada</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
         }
-
+        
         body {
-            background-color: #1a1a2e;
+            background: #1a1a2e;
             font-family: 'Courier New', monospace;
             color: #fff;
-            overflow-x: hidden;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .header {
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #4ade80;
-            font-size: 2.5rem;
-            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #86efac;
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-        }
-
-        .instructions {
-            color: #60a5fa;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
-
-        .canvas-container {
-            position: relative;
-            margin: 0 auto 20px;
-            border: 4px solid #4ade80;
-            border-radius: 4px;
             overflow: hidden;
-            background: #000;
+            height: 100vh;
         }
-
-        canvas {
+        
+        #pixelGarden {
             display: block;
             cursor: crosshair;
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            width: 100%;
-            max-width: 800px;
-            height: auto;
+            width: 100vw;
+            height: 100vh;
         }
-
-        .controls {
+        
+        .config-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(74, 222, 128, 0.9);
+            border: 3px solid #4ade80;
+            border-radius: 50%;
+            cursor: pointer;
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+            align-items: center;
             justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s, opacity 0.5s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        
+        .config-btn:hover {
+            background: #4ade80;
+            transform: rotate(90deg) scale(1.1);
+        }
+        
+        .panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 420px;
+            height: 100vh;
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(10px);
+            border-left: 3px solid #4ade80;
+            padding: 30px;
+            overflow-y: auto;
+            transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 999;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .panel.open { 
+            right: 0; 
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #4ade80;
+        }
+        
+        h2 {
+            color: #4ade80;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+        
+        .close {
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+        
+        .close:hover {
+            background: #dc2626;
+            transform: rotate(90deg);
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        h3 {
+            color: #86efac;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 3px solid #4ade80;
+        }
+        
+        .control {
             margin-bottom: 20px;
-            background: rgba(30, 41, 59, 0.8);
+            background: rgba(30, 41, 59, 0.5);
             padding: 15px;
             border-radius: 8px;
-            border: 2px solid #374151;
+            border: 1px solid #374151;
         }
-
-        button {
-            background: #4ade80;
-            color: #1a1a2e;
-            border: none;
-            padding: 12px 24px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        button:hover {
-            background: #22c55e;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .reset-btn {
-            background: #ef4444;
-        }
-
-        .reset-btn:hover {
-            background: #dc2626;
-        }
-
-        .speed-control {
+        
+        .label {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #d1d5db;
+            font-size: 0.95rem;
         }
-
-        .speed-label {
-            color: #86efac;
+        
+        .value {
+            color: #4ade80;
             font-weight: bold;
-            font-size: 0.9rem;
+            min-width: 60px;
+            text-align: right;
         }
-
+        
         input[type="range"] {
-            width: 200px;
+            width: 100%;
             height: 8px;
             -webkit-appearance: none;
             background: #374151;
             border-radius: 4px;
             outline: none;
         }
-
+        
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 20px;
@@ -141,297 +154,497 @@
             background: #4ade80;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
         }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 10px;
-            color: #60a5fa;
-            font-size: 0.9rem;
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4ade80;
+            border-radius: 50%;
+            border: none;
         }
-
-        .stat-box {
-            background: rgba(30, 41, 59, 0.8);
-            padding: 10px 15px;
-            border-radius: 6px;
-            border: 1px solid #374151;
-            min-width: 120px;
-        }
-
-        .feature-list {
+        
+        .btns {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
-            margin-top: 20px;
-            color: #d1d5db;
         }
-
-        .feature-item {
-            background: rgba(30, 41, 59, 0.6);
-            padding: 10px;
-            border-radius: 4px;
+        
+        button {
+            background: #4ade80;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #22c55e;
+            transform: translateY(-2px);
+        }
+        
+        .reset { 
+            background: #ef4444; 
+        }
+        
+        .reset:hover { 
+            background: #dc2626; 
+        }
+        
+        .pause { 
+            background: #f59e0b; 
+        }
+        
+        .pause:hover { 
+            background: #d97706; 
+        }
+        
+        .rain { 
+            background: #3b82f6; 
+        }
+        
+        .rain:hover { 
+            background: #2563eb; 
+        }
+        
+        .rain.active {
+            background: #1e40af;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .stats {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #374151;
+            color: #60a5fa;
+        }
+        
+        .stat:last-child { 
+            border-bottom: none; 
+        }
+        
+        .stat span:last-child {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .preset {
+            padding: 8px;
             font-size: 0.85rem;
-            border-left: 3px solid #4ade80;
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid #4ade80;
+            color: #4ade80;
         }
-
-        .footer {
-            margin-top: 20px;
-            color: #9ca3af;
-            font-size: 0.8rem;
-            text-align: center;
+        
+        .preset:hover {
+            background: rgba(74, 222, 128, 0.3);
         }
-
+        
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
+            .panel { 
+                width: 100vw; 
+                right: -100vw; 
             }
-            
-            .controls {
-                flex-direction: column;
-                align-items: center;
+            .config-btn { 
+                top: 10px; 
+                right: 10px; 
+                width: 45px; 
+                height: 45px; 
             }
-            
-            button {
-                width: 100%;
-                max-width: 250px;
-            }
-            
-            .stats {
-                flex-direction: column;
-                align-items: center;
-            }
+        }
+        
+        ::-webkit-scrollbar { 
+            width: 8px; 
+        }
+        
+        ::-webkit-scrollbar-track { 
+            background: rgba(30, 41, 59, 0.5); 
+        }
+        
+        ::-webkit-scrollbar-thumb { 
+            background: #4ade80; 
+            border-radius: 4px; 
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <canvas id="pixelGarden"></canvas>
+    <div class="config-btn" onclick="togglePanel()">⚙️</div>
+    
+    <div class="panel" id="panel">
         <div class="header">
-            <h1>🌿 JARDIM PIXEL INTERATIVO 🌿</h1>
-            <p class="subtitle">Estilo Doom '93 - Pixel Art Dinâmico</p>
-            <p class="instructions">Passe o mouse sobre a grama • Clique e arraste para criar vagalumes</p>
+            <h2>⚙️ Configurações</h2>
+            <button class="close" onclick="togglePanel()">✕</button>
         </div>
-
-        <div class="canvas-container">
-            <canvas id="pixelGarden"></canvas>
-        </div>
-
-        <div class="controls">
-            <button id="toggleBtn">⏸ PAUSAR</button>
-            <button id="resetBtn" class="reset-btn">🔄 RESETAR</button>
-            
-            <div class="speed-control">
-                <span class="speed-label">VELOCIDADE: <span id="speedValue">1.0x</span></span>
-                <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+        
+        <div class="section">
+            <h3>🎮 Controles</h3>
+            <div class="btns">
+                <button class="pause" id="pauseBtn" onclick="togglePause()">⏸ Pausar</button>
+                <button class="reset" onclick="resetGarden()">🔄 Reset</button>
+                <button class="rain" id="rainBtn" onclick="toggleRain()">🌧️ Chuva</button>
             </div>
         </div>
-
-        <div class="stats">
-            <div class="stat-box">🌱 Grama: <span id="grassCount">0</span></div>
-            <div class="stat-box">🌸 Flores: <span id="flowerCount">0</span></div>
-            <div class="stat-box">✨ Vagalumes: <span id="fireflyCount">0</span></div>
+        
+        <div class="section">
+            <h3>📐 Tamanho</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Tamanho do Pixel</span>
+                    <span class="value" id="val_gridSize">4px</span>
+                </div>
+                <input type="range" min="2" max="8" value="4" 
+                       oninput="updateConfig('gridSize', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Densidade</span>
+                    <span class="value" id="val_density">100%</span>
+                </div>
+                <input type="range" min="10" max="100" step="5" value="100" 
+                       oninput="updateConfig('density', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Altura</span>
+                    <span class="value" id="val_height">1.0x</span>
+                </div>
+                <input type="range" min="0.5" max="2" step="0.1" value="1" 
+                       oninput="updateConfig('height', this.value)">
+            </div>
         </div>
-
-        <div class="feature-list">
-            <div class="feature-item">• Grama procedural com crescimento único</div>
-            <div class="feature-item">• Flores aparecem aleatoriamente</div>
-            <div class="feature-item">• Vagalumes azuis ao clicar e arrastar</div>
-            <div class="feature-item">• Interação completa com o mouse</div>
+        
+        <div class="section">
+            <h3>🌧️ Sistema de Chuva</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Intensidade</span>
+                    <span class="value" id="val_rainIntensity">50</span>
+                </div>
+                <input type="range" min="10" max="100" step="5" value="50" 
+                       oninput="updateConfig('rainIntensity', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Tamanho dos Pingos</span>
+                    <span class="value" id="val_dropSize">1.0x</span>
+                </div>
+                <input type="range" min="0.5" max="3" step="0.1" value="1" 
+                       oninput="updateConfig('dropSize', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Velocidade</span>
+                    <span class="value" id="val_rainSpeed">1.0x</span>
+                </div>
+                <input type="range" min="0.5" max="2.5" step="0.1" value="1" 
+                       oninput="updateConfig('rainSpeed', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Direção Horizontal</span>
+                    <span class="value" id="val_windForce">0</span>
+                </div>
+                <input type="range" min="-5" max="5" step="0.5" value="0" 
+                       oninput="updateConfig('windForce', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Força de Impacto</span>
+                    <span class="value" id="val_impactForce">1.0x</span>
+                </div>
+                <input type="range" min="0.5" max="3" step="0.1" value="1" 
+                       oninput="updateConfig('impactForce', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Respingos</span>
+                    <span class="value" id="val_splashAmount">5</span>
+                </div>
+                <input type="range" min="0" max="10" step="1" value="5" 
+                       oninput="updateConfig('splashAmount', this.value)">
+            </div>
         </div>
-
-        <div class="footer">
-            <p>Desenvolvido com HTML5 Canvas • Estilo Pixel Art • Efeitos Dinâmicos</p>
+        
+        <div class="section">
+            <h3>⚡ Performance</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Velocidade Global</span>
+                    <span class="value" id="val_speed">1.0x</span>
+                </div>
+                <input type="range" min="0.1" max="3" step="0.1" value="1" 
+                       oninput="updateConfig('speed', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Partículas de Fundo</span>
+                    <span class="value" id="val_particles">100</span>
+                </div>
+                <input type="range" min="0" max="300" step="10" value="100" 
+                       oninput="updateConfig('particles', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Max Vagalumes</span>
+                    <span class="value" id="val_maxFireflies">200</span>
+                </div>
+                <input type="range" min="50" max="500" step="25" value="200" 
+                       oninput="updateConfig('maxFireflies', this.value)">
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>🎯 Presets</h3>
+            <div class="presets">
+                <button class="preset" onclick="applyPreset('low')">Baixo</button>
+                <button class="preset" onclick="applyPreset('medium')">Médio</button>
+                <button class="preset" onclick="applyPreset('high')">Alto</button>
+                <button class="preset" onclick="applyPreset('ultra')">Ultra</button>
+                <button class="preset" onclick="applyPreset('retro')">Retro</button>
+                <button class="preset" onclick="applyPreset('storm')">⛈️ Tempestade</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>📊 Estatísticas</h3>
+            <div class="stats">
+                <div class="stat">
+                    <span>🌱 Grama Ativa</span>
+                    <span id="stat_grass">0</span>
+                </div>
+                <div class="stat">
+                    <span>🌸 Flores</span>
+                    <span id="stat_flowers">0</span>
+                </div>
+                <div class="stat">
+                    <span>✨ Vagalumes</span>
+                    <span id="stat_fireflies">0</span>
+                </div>
+                <div class="stat">
+                    <span>💧 Gotas de Chuva</span>
+                    <span id="stat_rain">0</span>
+                </div>
+                <div class="stat">
+                    <span>💦 Respingos</span>
+                    <span id="stat_splashes">0</span>
+                </div>
+                <div class="stat">
+                    <span>⚡ FPS</span>
+                    <span id="stat_fps">60</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configurações principais
+        // ============================================
+        // CONFIGURAÇÃO E ESTADO GLOBAL
+        // ============================================
+        
         const canvas = document.getElementById('pixelGarden');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
         
-        // Definir tamanho do canvas
-        canvas.width = 800;
-        canvas.height = 480;
+        const config = {
+            gridSize: 4,
+            density: 100,
+            height: 1,
+            speed: 1,
+            particles: 100,
+            maxFireflies: 200,
+            
+            // Configurações avançadas de chuva
+            rainIntensity: 50,
+            dropSize: 1,
+            rainSpeed: 1,
+            windForce: 0,
+            impactForce: 1,
+            splashAmount: 5
+        };
         
-        // Estado do jogo
-        let isGrowing = true;
-        let speed = 1;
-        let mouseX = -100;
-        let mouseY = -100;
-        let isMouseDown = false;
+        const state = {
+            cols: 0,
+            rows: 0,
+            grass: [],
+            flowers: [],
+            fireflies: [],
+            raindrops: [],
+            splashes: [],
+            impacts: [],
+            fireflyPool: [],
+            
+            isGrowing: true,
+            isRaining: false,
+            
+            mouseX: -100,
+            mouseY: -100,
+            isMouseDown: false,
+            
+            time: 0,
+            fps: 60,
+            lastTime: performance.now(),
+            frames: 0,
+            fpsTime: 0,
+            
+            uiVisible: true,
+            lastMouseMove: Date.now()
+        };
         
-        // Elementos da UI
-        const toggleBtn = document.getElementById('toggleBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const speedSlider = document.getElementById('speedSlider');
-        const speedValue = document.getElementById('speedValue');
-        const grassCountEl = document.getElementById('grassCount');
-        const flowerCountEl = document.getElementById('flowerCount');
-        const fireflyCountEl = document.getElementById('fireflyCount');
+        // ============================================
+        // CORES E CACHE
+        // ============================================
         
-        // Paletas de cores
-        const grassColors = [
-            '#1a4d2e', '#2d5a3d', '#3d6b4a', '#4d7c5b',
-            '#5d8d6c', '#6d9e7d', '#7daf8e'
+        const GRASS_COLORS = [
+            [26, 77, 46],
+            [45, 90, 61],
+            [61, 107, 74],
+            [77, 124, 91],
+            [93, 141, 108],
+            [109, 158, 125],
+            [125, 175, 142]
         ];
         
-        const flowerColors = [
-            '#ff4444', '#ff6b6b', '#ffaa44', '#ffdd44',
-            '#ff44aa', '#aa44ff', '#4444ff'
+        const FLOWER_COLORS = [
+            [255, 68, 68],
+            [255, 107, 107],
+            [255, 170, 68],
+            [255, 221, 68],
+            [255, 68, 170],
+            [170, 68, 255],
+            [68, 68, 255]
         ];
         
-        // Grid de grama
-        const gridSize = 4;
-        const cols = Math.floor(canvas.width / gridSize);
-        const rows = Math.floor(canvas.height / gridSize);
-        let grass = [];
-        let flowers = [];
-        let fireflies = [];
+        const sinCache = new Float32Array(360);
+        const cosCache = new Float32Array(360);
         
-        // Inicialização
-        function init() {
-            initGrass();
-            initUIEvents();
-            requestAnimationFrame(update);
+        for (let i = 0; i < 360; i++) {
+            const radians = (i * Math.PI) / 180;
+            sinCache[i] = Math.sin(radians);
+            cosCache[i] = Math.cos(radians);
         }
         
-        function initGrass() {
-            grass = [];
-            for (let x = 0; x < cols; x++) {
-                grass[x] = [];
-                for (let y = 0; y < rows; y++) {
-                    grass[x][y] = {
-                        height: Math.random() * 3,
-                        maxHeight: 8 + Math.random() * 12,
+        function fastSin(angle) {
+            const normalized = ((angle % (Math.PI * 2)) / (Math.PI * 2)) * 360;
+            return sinCache[Math.floor(normalized) % 360];
+        }
+        
+        function fastCos(angle) {
+            const normalized = ((angle % (Math.PI * 2)) / (Math.PI * 2)) * 360;
+            return cosCache[Math.floor(normalized) % 360];
+        }
+        
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initializeGarden();
+        }
+        
+        function initializeGarden() {
+            state.cols = Math.floor(canvas.width / config.gridSize);
+            state.rows = Math.floor(canvas.height / config.gridSize);
+            state.grass = new Array(state.cols);
+            
+            for (let x = 0; x < state.cols; x++) {
+                state.grass[x] = new Array(state.rows);
+                for (let y = 0; y < state.rows; y++) {
+                    const isActive = Math.random() * 100 < config.density;
+                    state.grass[x][y] = {
+                        height: isActive ? Math.random() * 3 : 0,
+                        maxHeight: isActive ? (8 + Math.random() * 12) * config.height : 0,
                         growthRate: 0.02 + Math.random() * 0.03,
-                        color: grassColors[Math.floor(Math.random() * grassColors.length)],
-                        swayOffset: Math.random() * Math.PI * 2,
+                        colorIndex: Math.floor(Math.random() * GRASS_COLORS.length),
+                        offset: Math.random() * Math.PI * 2,
                         swaySpeed: 0.02 + Math.random() * 0.03,
-                        mouseSway: 0,
-                        mouseSwayDecay: 0.9 + Math.random() * 0.08
+                        sway: 0,
+                        swayDecay: 0.92 + Math.random() * 0.06,
+                        active: isActive,
+                        wetness: 0,
+                        impactSway: 0,
+                        impactDecay: 0.85
                     };
                 }
             }
             
-            flowers = [];
-            fireflies = [];
+            state.flowers = [];
+            state.fireflies = [];
+            state.raindrops = [];
+            state.splashes = [];
+            state.impacts = [];
         }
         
-        function initUIEvents() {
-            // Botões
-            toggleBtn.addEventListener('click', () => {
-                isGrowing = !isGrowing;
-                toggleBtn.textContent = isGrowing ? '⏸ PAUSAR' : '▶ CONTINUAR';
-            });
-            
-            resetBtn.addEventListener('click', () => {
-                isGrowing = false;
-                setTimeout(() => {
-                    initGrass();
-                    isGrowing = true;
-                    toggleBtn.textContent = '⏸ PAUSAR';
-                }, 100);
-            });
-            
-            // Slider de velocidade
-            speedSlider.addEventListener('input', (e) => {
-                speed = parseFloat(e.target.value);
-                speedValue.textContent = speed.toFixed(1) + 'x';
-            });
-            
-            // Eventos do mouse
-            canvas.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                mouseX = e.clientX - rect.left;
-                mouseY = e.clientY - rect.top;
-                processMouseInteraction();
-            });
-            
-            canvas.addEventListener('mousedown', (e) => {
-                if (e.button === 0) {
-                    isMouseDown = true;
-                }
-            });
-            
-            canvas.addEventListener('mouseup', (e) => {
-                if (e.button === 0) {
-                    isMouseDown = false;
-                }
-            });
-            
-            canvas.addEventListener('mouseleave', () => {
-                mouseX = -100;
-                mouseY = -100;
-                isMouseDown = false;
-            });
-            
-            // Toque para dispositivos móveis
-            canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const rect = canvas.getBoundingClientRect();
-                mouseX = e.touches[0].clientX - rect.left;
-                mouseY = e.touches[0].clientY - rect.top;
-                processMouseInteraction();
-            }, { passive: false });
-            
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                isMouseDown = true;
-            });
-            
-            canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                isMouseDown = false;
-            });
+        // ============================================
+        // CRIAÇÃO DE ENTIDADES
+        // ============================================
+        
+        function getFirefly() {
+            if (state.fireflyPool.length > 0) {
+                const firefly = state.fireflyPool.pop();
+                firefly.trail = [];
+                return firefly;
+            }
+            return { trail: [] };
         }
         
-        function processMouseInteraction() {
-            // Converter posição do mouse para coordenadas da grid
-            const gridX = Math.floor(mouseX / gridSize);
-            const gridY = Math.floor(mouseY / gridSize);
-            
-            // Raio de influência do mouse
-            const influenceRadius = 5;
-            
-            // Aplicar efeito de movimento na grama
-            for (let dx = -influenceRadius; dx <= influenceRadius; dx++) {
-                for (let dy = -influenceRadius; dy <= influenceRadius; dy++) {
-                    const x = gridX + dx;
-                    const y = gridY + dy;
-                    
-                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance <= influenceRadius) {
-                            const intensity = (1 - distance / influenceRadius) * 8;
-                            grass[x][y].mouseSway = Math.max(
-                                grass[x][y].mouseSway,
-                                intensity * 0.7
-                            );
-                        }
-                    }
-                }
+        function releaseFirefly(firefly) {
+            if (state.fireflyPool.length < config.maxFireflies) {
+                state.fireflyPool.push(firefly);
             }
+        }
+        
+        function createFirefly() {
+            if (state.fireflies.length >= config.maxFireflies) return;
             
-            // Criar vagalumes se o mouse estiver pressionado
-            if (isMouseDown && Math.random() > 0.7) {
-                for (let i = 0; i < 2; i++) {
-                    createFirefly();
-                }
-            }
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 2;
+            const firefly = getFirefly();
+            
+            Object.assign(firefly, {
+                x: state.mouseX + (Math.random() - 0.5) * 20,
+                y: state.mouseY + (Math.random() - 0.5) * 20,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 1 + Math.random() * 2,
+                alpha: 0.7 + Math.random() * 0.3,
+                pulseSpeed: 3 + Math.random() * 4,
+                life: 100 + Math.random() * 50,
+                trail: []
+            });
+            
+            state.fireflies.push(firefly);
         }
         
         function createFlower() {
-            if (Math.random() > 0.98 && flowers.length < 50) {
-                flowers.push({
-                    x: Math.random() * cols,
-                    y: Math.random() * rows,
+            if (Math.random() > 0.98 && state.flowers.length < 50) {
+                state.flowers.push({
+                    x: Math.random() * state.cols,
+                    y: Math.random() * state.rows,
                     height: 0,
-                    maxHeight: 15 + Math.random() * 10,
+                    maxHeight: (15 + Math.random() * 10) * config.height,
                     growthRate: 0.05 + Math.random() * 0.05,
-                    petalColor: flowerColors[Math.floor(Math.random() * flowerColors.length)],
-                    centerColor: '#ffdd44',
+                    colorIndex: Math.floor(Math.random() * FLOWER_COLORS.length),
                     petalSize: 2 + Math.random() * 2,
                     rotation: Math.random() * Math.PI * 2,
                     rotationSpeed: (Math.random() - 0.5) * 0.02
@@ -439,204 +652,759 @@
             }
         }
         
-        function createFirefly() {
-            const angle = Math.random() * Math.PI * 2;
-            const flySpeed = 1 + Math.random() * 2;
+        function createRaindrop() {
+            if (!state.isRaining) return;
             
-            fireflies.push({
-                x: mouseX + (Math.random() - 0.5) * 20,
-                y: mouseY + (Math.random() - 0.5) * 20,
-                vx: Math.cos(angle) * flySpeed,
-                vy: Math.sin(angle) * flySpeed,
-                size: 1 + Math.random() * 2,
-                color: '#66ccff',
-                alpha: 0.7 + Math.random() * 0.3,
-                pulseSpeed: 3 + Math.random() * 4,
-                life: 100 + Math.random() * 50,
-                trail: []
+            const baseLength = 8 + Math.random() * 8;
+            
+            state.raindrops.push({
+                x: Math.random() * canvas.width,
+                y: -5,
+                vx: config.windForce * 0.5,
+                vy: (8 + Math.random() * 4) * config.rainSpeed,
+                length: baseLength * config.dropSize,
+                width: Math.max(1, config.dropSize),
+                alpha: 0.3 + Math.random() * 0.3,
+                hasHit: false
             });
         }
         
-        let time = 0;
+        function createSplash(x, y) {
+            const numParticles = Math.floor(config.splashAmount);
+            
+            for (let i = 0; i < numParticles; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                
+                state.splashes.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2,
+                    size: 1 + Math.random() * 2,
+                    alpha: 0.6 + Math.random() * 0.4,
+                    life: 20 + Math.random() * 10,
+                    gravity: 0.3
+                });
+            }
+        }
+        
+        function createImpact(gridX, gridY, force) {
+            const impact = {
+                gridX: gridX,
+                gridY: gridY,
+                radius: 3,
+                force: force * config.impactForce,
+                life: 15,
+                maxLife: 15
+            };
+            
+            state.impacts.push(impact);
+        }
+        
+        // ============================================
+        // ATUALIZAÇÃO
+        // ============================================
+        
+        function updateGrass() {
+            const mouseGridX = Math.floor(state.mouseX / config.gridSize);
+            const mouseGridY = Math.floor(state.mouseY / config.gridSize);
+            const interactionRadius = 5;
+            const radiusSquared = interactionRadius * interactionRadius;
+            
+            for (let x = 0; x < state.cols; x++) {
+                for (let y = 0; y < state.rows; y++) {
+                    const cell = state.grass[x][y];
+                    if (!cell.active) continue;
+                    
+                    // Crescimento
+                    if (state.isGrowing && cell.height < cell.maxHeight) {
+                        cell.height += cell.growthRate * config.speed;
+                    }
+                    
+                    // Decaimento do balanço normal
+                    if (cell.sway > 0.1) {
+                        cell.sway *= cell.swayDecay;
+                    } else {
+                        cell.sway = 0;
+                    }
+                    
+                    // Decaimento do balanço de impacto
+                    if (cell.impactSway > 0.1) {
+                        cell.impactSway *= cell.impactDecay;
+                    } else {
+                        cell.impactSway = 0;
+                    }
+                    
+                    // Interação com mouse
+                    const dx = x - mouseGridX;
+                    const dy = y - mouseGridY;
+                    const distanceSquared = dx * dx + dy * dy;
+                    
+                    if (distanceSquared <= radiusSquared) {
+                        const distance = Math.sqrt(distanceSquared);
+                        const influence = (1 - distance / interactionRadius) * 8;
+                        cell.sway = Math.max(cell.sway, influence * 0.7);
+                    }
+                    
+                    // Decaimento de umidade
+                    if (cell.wetness > 0) {
+                        cell.wetness = Math.max(0, cell.wetness - 0.01 * config.speed);
+                    }
+                }
+            }
+            
+            // Aplicar impactos da chuva
+            for (const impact of state.impacts) {
+                const centerX = impact.gridX;
+                const centerY = impact.gridY;
+                const radius = impact.radius;
+                const radiusSquared = radius * radius;
+                
+                for (let x = Math.max(0, centerX - radius); x < Math.min(state.cols, centerX + radius + 1); x++) {
+                    for (let y = Math.max(0, centerY - radius); y < Math.min(state.rows, centerY + radius + 1); y++) {
+                        const cell = state.grass[x][y];
+                        if (!cell.active) continue;
+                        
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const distanceSquared = dx * dx + dy * dy;
+                        
+                        if (distanceSquared <= radiusSquared) {
+                            const distance = Math.sqrt(distanceSquared);
+                            const influence = (1 - distance / radius) * impact.force;
+                            
+                            // Direção radial a partir do ponto de impacto
+                            const angle = Math.atan2(dy, dx);
+                            cell.impactSway += influence * Math.cos(angle) * 2;
+                            cell.wetness = Math.min(1, cell.wetness + 0.3);
+                        }
+                    }
+                }
+            }
+        }
+        
+        function updateFlowers() {
+            if (state.isGrowing) createFlower();
+            
+            for (const flower of state.flowers) {
+                if (state.isGrowing && flower.height < flower.maxHeight) {
+                    flower.height += flower.growthRate * config.speed;
+                }
+                
+                if (flower.height >= flower.maxHeight * 0.8) {
+                    flower.rotation += flower.rotationSpeed;
+                }
+            }
+        }
+        
+        function updateFireflies() {
+            if (state.isMouseDown && Math.random() > 0.7) {
+                createFirefly();
+                createFirefly();
+            }
+            
+            for (let i = state.fireflies.length - 1; i >= 0; i--) {
+                const firefly = state.fireflies[i];
+                
+                firefly.x += firefly.vx * config.speed;
+                firefly.y += firefly.vy * config.speed;
+                firefly.life -= config.speed;
+                
+                firefly.trail.push({ x: firefly.x, y: firefly.y });
+                if (firefly.trail.length > 10) firefly.trail.shift();
+                
+                const isOutOfBounds = firefly.x < -10 || firefly.x > canvas.width + 10 ||
+                                     firefly.y < -10 || firefly.y > canvas.height + 10;
+                
+                if (firefly.life <= 0 || isOutOfBounds) {
+                    releaseFirefly(firefly);
+                    state.fireflies.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateRain() {
+            // Criar novas gotas
+            if (state.isRaining && Math.random() * 100 < config.rainIntensity) {
+                createRaindrop();
+            }
+            
+            // Atualizar gotas existentes
+            for (let i = state.raindrops.length - 1; i >= 0; i--) {
+                const drop = state.raindrops[i];
+                
+                drop.x += drop.vx * config.speed;
+                drop.y += drop.vy * config.speed;
+                
+                // Verificar colisão com o chão ou grama
+                const gridX = Math.floor(drop.x / config.gridSize);
+                const gridY = Math.floor(drop.y / config.gridSize);
+                
+                let shouldRemove = false;
+                
+                // Colisão com grama
+                if (gridX >= 0 && gridX < state.cols && gridY >= 0 && gridY < state.rows) {
+                    const cell = state.grass[gridX][gridY];
+                    
+                    if (cell && cell.active && cell.height > 0) {
+                        const grassTopY = gridY * config.gridSize - cell.height;
+                        
+                        if (drop.y >= grassTopY && !drop.hasHit) {
+                            drop.hasHit = true;
+                            createSplash(drop.x, grassTopY);
+                            createImpact(gridX, gridY, 3);
+                            shouldRemove = true;
+                        }
+                    }
+                }
+                
+                // Colisão com o chão (fundo do canvas)
+                if (drop.y >= canvas.height - 5) {
+                    if (!drop.hasHit) {
+                        createSplash(drop.x, canvas.height - 5);
+                        if (gridX >= 0 && gridX < state.cols) {
+                            createImpact(gridX, state.rows - 1, 2);
+                        }
+                    }
+                    shouldRemove = true;
+                }
+                
+                // Remover gotas que saíram da tela horizontalmente
+                if (drop.x < -20 || drop.x > canvas.width + 20) {
+                    shouldRemove = true;
+                }
+                
+                if (shouldRemove) {
+                    state.raindrops.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateSplashes() {
+            for (let i = state.splashes.length - 1; i >= 0; i--) {
+                const splash = state.splashes[i];
+                
+                splash.x += splash.vx * config.speed;
+                splash.y += splash.vy * config.speed;
+                splash.vy += splash.gravity * config.speed;
+                splash.life -= config.speed;
+                
+                if (splash.life <= 0 || splash.y > canvas.height) {
+                    state.splashes.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateImpacts() {
+            for (let i = state.impacts.length - 1; i >= 0; i--) {
+                const impact = state.impacts[i];
+                impact.life -= config.speed;
+                
+                if (impact.life <= 0) {
+                    state.impacts.splice(i, 1);
+                }
+            }
+        }
         
         function update() {
-            // Limpar canvas
+            updateGrass();
+            updateFlowers();
+            updateFireflies();
+            updateRain();
+            updateSplashes();
+            updateImpacts();
+        }
+        
+        // ============================================
+        // RENDERIZAÇÃO
+        // ============================================
+        
+        function renderBackground() {
             ctx.fillStyle = '#2a1810';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Textura do solo
-            for (let i = 0; i < 300; i++) {
-                ctx.fillStyle = `rgba(60, 40, 30, ${Math.random() * 0.3})`;
-                ctx.fillRect(
-                    Math.random() * canvas.width,
-                    Math.random() * canvas.height,
-                    1, 1
-                );
+            if (config.particles > 0) {
+                ctx.fillStyle = 'rgba(60, 40, 30, 0.15)';
+                for (let i = 0; i < config.particles; i++) {
+                    const x = (Math.random() * canvas.width) | 0;
+                    const y = (Math.random() * canvas.height) | 0;
+                    ctx.fillRect(x, y, 2, 2);
+                }
             }
+        }
+        
+        function renderGrass() {
+            let activeCount = 0;
+            const mouseGridX = Math.floor(state.mouseX / config.gridSize);
+            const mouseGridY = Math.floor(state.mouseY / config.gridSize);
             
-            time += 0.016 * speed;
-            
-            // Atualizar e desenhar grama
-            let activeGrass = 0;
-            for (let x = 0; x < cols; x++) {
-                for (let y = 0; y < rows; y++) {
-                    const cell = grass[x][y];
+            for (let x = 0; x < state.cols; x++) {
+                for (let y = 0; y < state.rows; y++) {
+                    const cell = state.grass[x][y];
+                    if (!cell.active || cell.height <= 0) continue;
                     
-                    // Crescimento
-                    if (isGrowing && cell.height < cell.maxHeight) {
-                        cell.height += cell.growthRate * speed;
-                    }
+                    activeCount++;
                     
-                    // Decaimento do movimento do mouse
-                    cell.mouseSway *= cell.mouseSwayDecay;
-                    if (Math.abs(cell.mouseSway) < 0.1) cell.mouseSway = 0;
+                    const baseSway = fastSin(state.time * cell.swaySpeed + cell.offset) * 2;
+                    const totalSway = baseSway + cell.sway + cell.impactSway;
+                    const baseX = x * config.gridSize;
+                    const baseY = y * config.gridSize;
+                    const isNearMouse = Math.abs(x - mouseGridX) <= 2 && Math.abs(y - mouseGridY) <= 2;
                     
-                    if (cell.height > 0) {
-                        activeGrass++;
-                        const baseSway = Math.sin(time * cell.swaySpeed + cell.swayOffset) * 2;
-                        const totalSway = baseSway + cell.mouseSway;
-                        const baseX = x * gridSize;
-                        const baseY = y * gridSize;
-                        
-                        // Verificar se está sob o mouse
-                        const isUnderMouse = (
-                            Math.abs(x - Math.floor(mouseX / gridSize)) <= 2 &&
-                            Math.abs(y - Math.floor(mouseY / gridSize)) <= 2
+                    const cellHeight = cell.height | 0;
+                    for (let h = 0; h < cellHeight; h++) {
+                        const screenY = baseY - h;
+                        const swayOffset = (h / cell.height) * totalSway;
+                        const colorIdx = Math.min(
+                            ((h / cell.maxHeight) * GRASS_COLORS.length) | 0,
+                            GRASS_COLORS.length - 1
                         );
                         
-                        // Desenhar grama
-                        for (let h = 0; h < Math.floor(cell.height); h++) {
-                            const segmentY = baseY - h;
-                            const segmentSway = (h / cell.height) * totalSway;
-                            
-                            let colorIndex = Math.min(
-                                Math.floor((h / cell.maxHeight) * grassColors.length),
-                                grassColors.length - 1
-                            );
-                            
-                            let color = grassColors[colorIndex];
-                            
-                            // Brilho quando sob o mouse
-                            if (isUnderMouse && h > cell.height * 0.7) {
-                                color = lightenColor(color, 50);
-                            }
-                            
-                            ctx.fillStyle = color;
-                            ctx.fillRect(baseX + segmentSway, segmentY, gridSize, 1);
+                        let [r, g, b] = GRASS_COLORS[colorIdx];
+                        
+                        // Efeito de destaque perto do mouse
+                        if (isNearMouse && h > cell.height * 0.7) {
+                            r = Math.min(255, r + 50);
+                            g = Math.min(255, g + 50);
+                            b = Math.min(255, b + 50);
                         }
+                        
+                        // Efeito de umidade
+                        if (cell.wetness > 0) {
+                            const wetFactor = cell.wetness * 0.3;
+                            r = Math.max(0, r * (1 - wetFactor));
+                            g = Math.max(0, g * (1 - wetFactor) + 20 * wetFactor);
+                            b = Math.max(0, b * (1 - wetFactor) + 40 * wetFactor);
+                        }
+                        
+                        ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
+                        ctx.fillRect((baseX + swayOffset) | 0, screenY, config.gridSize, 1);
                     }
                 }
             }
             
-            // Atualizar e desenhar flores
-            flowers.forEach((flower, index) => {
-                if (isGrowing && flower.height < flower.maxHeight) {
-                    flower.height += flower.growthRate * speed;
-                }
+            return activeCount;
+        }
+        
+        function renderFlowers() {
+            for (const flower of state.flowers) {
+                if (flower.height <= 5) continue;
                 
-                if (flower.height > 5) {
-                    const baseX = flower.x * gridSize;
-                    const baseY = flower.y * gridSize;
+                const baseX = (flower.x * config.gridSize) | 0;
+                const baseY = (flower.y * config.gridSize) | 0;
+                const stemHeight = flower.height | 0;
+                
+                ctx.fillStyle = '#2d5a3d';
+                ctx.fillRect(baseX, baseY - stemHeight, 2, stemHeight);
+                
+                if (flower.height >= flower.maxHeight * 0.8) {
+                    const flowerTop = baseY - stemHeight;
+                    const [r, g, b] = FLOWER_COLORS[flower.colorIndex];
                     
-                    // Caule
-                    for (let h = 0; h < Math.floor(flower.height); h++) {
-                        ctx.fillStyle = '#2d5a3d';
-                        ctx.fillRect(baseX, baseY - h, 2, 1);
+                    for (let p = 0; p < 8; p++) {
+                        const angle = (Math.PI * 0.25 * p) + flower.rotation;
+                        const petalX = baseX + fastCos(angle) * flower.petalSize * 2;
+                        const petalY = flowerTop + fastSin(angle) * flower.petalSize * 2;
+                        
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(
+                            petalX | 0, 
+                            petalY | 0, 
+                            Math.ceil(flower.petalSize), 
+                            Math.ceil(flower.petalSize)
+                        );
                     }
                     
-                    // Pétalas
-                    if (flower.height >= flower.maxHeight * 0.8) {
-                        flower.rotation += flower.rotationSpeed;
-                        const flowerTop = baseY - Math.floor(flower.height);
-                        
-                        // Pétalas
-                        for (let i = 0; i < 8; i++) {
-                            const angle = (Math.PI * 2 * i) / 8 + flower.rotation;
-                            const petalX = baseX + Math.cos(angle) * flower.petalSize * 2;
-                            const petalY = flowerTop + Math.sin(angle) * flower.petalSize * 2;
-                            
-                            ctx.fillStyle = flower.petalColor;
-                            ctx.fillRect(
-                                Math.floor(petalX),
-                                Math.floor(petalY),
-                                Math.ceil(flower.petalSize),
-                                Math.ceil(flower.petalSize)
-                            );
-                        }
-                        
-                        // Centro
-                        ctx.fillStyle = flower.centerColor;
-                        ctx.fillRect(baseX - 1, flowerTop - 1, 3, 3);
-                    }
+                    ctx.fillStyle = '#ffdd44';
+                    ctx.fillRect(baseX - 1, flowerTop - 1, 3, 3);
                 }
-            });
-            
-            // Atualizar e desenhar vagalumes
-            fireflies.forEach((firefly, index) => {
-                // Atualizar posição
-                firefly.x += firefly.vx * speed;
-                firefly.y += firefly.vy * speed;
-                firefly.life -= speed;
+            }
+        }
+        
+        function renderFireflies() {
+            for (const firefly of state.fireflies) {
+                const pulse = fastSin(state.time * firefly.pulseSpeed) * 0.3 + 0.7;
                 
-                // Rastro
-                firefly.trail.push({ x: firefly.x, y: firefly.y });
-                if (firefly.trail.length > 10) {
-                    firefly.trail.shift();
+                for (let i = 0; i < firefly.trail.length; i++) {
+                    const trailPoint = firefly.trail[i];
+                    const trailAlpha = (i / firefly.trail.length) * firefly.alpha * 0.5;
+                    ctx.fillStyle = `rgba(102, 204, 255, ${trailAlpha})`;
+                    ctx.fillRect(trailPoint.x | 0, trailPoint.y | 0, 1, 1);
                 }
                 
-                // Pulsação
-                const pulse = Math.sin(time * firefly.pulseSpeed) * 0.3 + 0.7;
-                
-                // Desenhar rastro
-                firefly.trail.forEach((point, i) => {
-                    const alpha = (i / firefly.trail.length) * firefly.alpha * 0.5;
-                    ctx.fillStyle = `rgba(102, 204, 255, ${alpha})`;
-                    ctx.fillRect(point.x, point.y, 1, 1);
-                });
-                
-                // Desenhar vagalume
                 ctx.fillStyle = `rgba(102, 204, 255, ${firefly.alpha * pulse})`;
                 ctx.fillRect(
-                    firefly.x - firefly.size / 2,
-                    firefly.y - firefly.size / 2,
-                    firefly.size,
-                    firefly.size
+                    (firefly.x - firefly.size / 2) | 0,
+                    (firefly.y - firefly.size / 2) | 0,
+                    firefly.size | 0,
+                    firefly.size | 0
                 );
-                
-                // Remover se fora da tela ou sem vida
-                if (firefly.life <= 0 || 
-                    firefly.x < 0 || firefly.x > canvas.width || 
-                    firefly.y < 0 || firefly.y > canvas.height) {
-                    fireflies.splice(index, 1);
-                }
-            });
+            }
+        }
+        
+        function renderRain() {
+            ctx.lineCap = 'round';
             
-            // Criar novas flores
-            if (isGrowing) {
-                createFlower();
+            for (const drop of state.raindrops) {
+                ctx.strokeStyle = `rgba(150, 200, 255, ${drop.alpha})`;
+                ctx.lineWidth = drop.width;
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x - drop.vx * 2, drop.y - drop.length);
+                ctx.stroke();
+            }
+        }
+        
+        function renderSplashes() {
+            for (const splash of state.splashes) {
+                const fadeAlpha = (splash.life / 30) * splash.alpha;
+                ctx.fillStyle = `rgba(150, 200, 255, ${fadeAlpha})`;
+                ctx.fillRect(
+                    (splash.x - splash.size / 2) | 0,
+                    (splash.y - splash.size / 2) | 0,
+                    splash.size | 0,
+                    splash.size | 0
+                );
+            }
+        }
+        
+        function render() {
+            renderBackground();
+            const grassCount = renderGrass();
+            renderFlowers();
+            renderFireflies();
+            renderRain();
+            renderSplashes();
+            
+            document.getElementById('stat_grass').textContent = grassCount;
+            document.getElementById('stat_flowers').textContent = state.flowers.length;
+            document.getElementById('stat_fireflies').textContent = state.fireflies.length;
+            document.getElementById('stat_rain').textContent = state.raindrops.length;
+            document.getElementById('stat_splashes').textContent = state.splashes.length;
+        }
+        
+        // ============================================
+        // LOOP PRINCIPAL
+        // ============================================
+        
+        function gameLoop() {
+            const now = performance.now();
+            const delta = now - state.lastTime;
+            state.lastTime = now;
+            
+            state.frames++;
+            state.fpsTime += delta;
+            
+            if (state.fpsTime >= 1000) {
+                state.fps = (state.frames * 1000 / state.fpsTime) | 0;
+                document.getElementById('stat_fps').textContent = state.fps;
+                state.frames = 0;
+                state.fpsTime = 0;
             }
             
-            // Atualizar estatísticas
-            grassCountEl.textContent = activeGrass;
-            flowerCountEl.textContent = flowers.length;
-            fireflyCountEl.textContent = fireflies.length;
+            state.time += 0.016 * config.speed;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ============================================
+        // CONTROLES DA UI
+        // ============================================
+        
+        function togglePanel() {
+            document.getElementById('panel').classList.toggle('open');
+        }
+        
+        function togglePause() {
+            state.isGrowing = !state.isGrowing;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = state.isGrowing ? '⏸ Pausar' : '▶ Continuar';
+        }
+        
+        function toggleRain() {
+            state.isRaining = !state.isRaining;
+            const btn = document.getElementById('rainBtn');
+            btn.textContent = state.isRaining ? '🌧️ Parar' : '🌧️ Chuva';
+            btn.classList.toggle('active', state.isRaining);
+        }
+        
+        function resetGarden() {
+            initializeGarden();
+        }
+        
+        function updateConfig(key, value) {
+            const valueNum = parseFloat(value);
             
-            // Continuar o loop de animação
-            requestAnimationFrame(update);
+            const configMap = {
+                gridSize: () => {
+                    config.gridSize = valueNum;
+                    document.getElementById('val_gridSize').textContent = valueNum + 'px';
+                    initializeGarden();
+                },
+                density: () => {
+                    config.density = valueNum;
+                    document.getElementById('val_density').textContent = valueNum + '%';
+                    initializeGarden();
+                },
+                height: () => {
+                    config.height = valueNum;
+                    document.getElementById('val_height').textContent = valueNum.toFixed(1) + 'x';
+                    initializeGarden();
+                },
+                speed: () => {
+                    config.speed = valueNum;
+                    document.getElementById('val_speed').textContent = valueNum.toFixed(1) + 'x';
+                },
+                particles: () => {
+                    config.particles = valueNum;
+                    document.getElementById('val_particles').textContent = valueNum;
+                },
+                maxFireflies: () => {
+                    config.maxFireflies = valueNum;
+                    document.getElementById('val_maxFireflies').textContent = valueNum;
+                },
+                rainIntensity: () => {
+                    config.rainIntensity = valueNum;
+                    document.getElementById('val_rainIntensity').textContent = valueNum;
+                },
+                dropSize: () => {
+                    config.dropSize = valueNum;
+                    document.getElementById('val_dropSize').textContent = valueNum.toFixed(1) + 'x';
+                },
+                rainSpeed: () => {
+                    config.rainSpeed = valueNum;
+                    document.getElementById('val_rainSpeed').textContent = valueNum.toFixed(1) + 'x';
+                },
+                windForce: () => {
+                    config.windForce = valueNum;
+                    document.getElementById('val_windForce').textContent = valueNum.toFixed(1);
+                },
+                impactForce: () => {
+                    config.impactForce = valueNum;
+                    document.getElementById('val_impactForce').textContent = valueNum.toFixed(1) + 'x';
+                },
+                splashAmount: () => {
+                    config.splashAmount = valueNum;
+                    document.getElementById('val_splashAmount').textContent = valueNum;
+                }
+            };
+            
+            if (configMap[key]) {
+                configMap[key]();
+            }
         }
         
-        // Função utilitária para clarear cores
-        function lightenColor(color, amount) {
-            const hex = color.replace('#', '');
-            const num = parseInt(hex, 16);
-            const r = Math.min(255, (num >> 16) + amount);
-            const g = Math.min(255, ((num >> 8) & 0x00FF) + amount);
-            const b = Math.min(255, (num & 0x0000FF) + amount);
-            return `rgb(${r}, ${g}, ${b})`;
+        function applyPreset(presetName) {
+            const presets = {
+                low: {
+                    gridSize: 6,
+                    density: 50,
+                    height: 0.8,
+                    particles: 30,
+                    maxFireflies: 100,
+                    rainIntensity: 30,
+                    dropSize: 0.8,
+                    rainSpeed: 0.8,
+                    windForce: 0,
+                    impactForce: 0.7,
+                    splashAmount: 3
+                },
+                medium: {
+                    gridSize: 4,
+                    density: 75,
+                    height: 1,
+                    particles: 100,
+                    maxFireflies: 200,
+                    rainIntensity: 50,
+                    dropSize: 1,
+                    rainSpeed: 1,
+                    windForce: 0,
+                    impactForce: 1,
+                    splashAmount: 5
+                },
+                high: {
+                    gridSize: 3,
+                    density: 100,
+                    height: 1.2,
+                    particles: 150,
+                    maxFireflies: 300,
+                    rainIntensity: 70,
+                    dropSize: 1.3,
+                    rainSpeed: 1.2,
+                    windForce: 1,
+                    impactForce: 1.5,
+                    splashAmount: 7
+                },
+                ultra: {
+                    gridSize: 2,
+                    density: 100,
+                    height: 1.5,
+                    particles: 200,
+                    maxFireflies: 400,
+                    rainIntensity: 90,
+                    dropSize: 1.5,
+                    rainSpeed: 1.5,
+                    windForce: 2,
+                    impactForce: 2,
+                    splashAmount: 10
+                },
+                retro: {
+                    gridSize: 8,
+                    density: 60,
+                    height: 0.6,
+                    particles: 50,
+                    maxFireflies: 50,
+                    rainIntensity: 20,
+                    dropSize: 0.5,
+                    rainSpeed: 0.6,
+                    windForce: 0,
+                    impactForce: 0.5,
+                    splashAmount: 2
+                },
+                storm: {
+                    gridSize: 3,
+                    density: 100,
+                    height: 1,
+                    particles: 80,
+                    maxFireflies: 150,
+                    rainIntensity: 100,
+                    dropSize: 2,
+                    rainSpeed: 2,
+                    windForce: 4,
+                    impactForce: 2.5,
+                    splashAmount: 10
+                }
+            };
+            
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            Object.assign(config, preset);
+            
+            const inputs = document.querySelectorAll('input[type="range"]');
+            inputs[0].value = config.gridSize;
+            inputs[1].value = config.density;
+            inputs[2].value = config.height;
+            inputs[3].value = config.rainIntensity;
+            inputs[4].value = config.dropSize;
+            inputs[5].value = config.rainSpeed;
+            inputs[6].value = config.windForce;
+            inputs[7].value = config.impactForce;
+            inputs[8].value = config.splashAmount;
+            inputs[9].value = config.speed;
+            inputs[10].value = config.particles;
+            inputs[11].value = config.maxFireflies;
+            
+            document.getElementById('val_gridSize').textContent = config.gridSize + 'px';
+            document.getElementById('val_density').textContent = config.density + '%';
+            document.getElementById('val_height').textContent = config.height.toFixed(1) + 'x';
+            document.getElementById('val_rainIntensity').textContent = config.rainIntensity;
+            document.getElementById('val_dropSize').textContent = config.dropSize.toFixed(1) + 'x';
+            document.getElementById('val_rainSpeed').textContent = config.rainSpeed.toFixed(1) + 'x';
+            document.getElementById('val_windForce').textContent = config.windForce.toFixed(1);
+            document.getElementById('val_impactForce').textContent = config.impactForce.toFixed(1) + 'x';
+            document.getElementById('val_splashAmount').textContent = config.splashAmount;
+            document.getElementById('val_speed').textContent = config.speed.toFixed(1) + 'x';
+            document.getElementById('val_particles').textContent = config.particles;
+            document.getElementById('val_maxFireflies').textContent = config.maxFireflies;
+            
+            initializeGarden();
         }
         
-        // Inicializar o jardim
-        init();
+        // ============================================
+        // SISTEMA DE AUTO-HIDE DA UI
+        // ============================================
+        
+        function showUI() {
+            state.uiVisible = true;
+            const btn = document.querySelector('.config-btn');
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        }
+        
+        function hideUI() {
+            const panel = document.getElementById('panel');
+            if (panel.classList.contains('open')) return;
+            
+            state.uiVisible = false;
+            const btn = document.querySelector('.config-btn');
+            btn.style.opacity = '0';
+            btn.style.pointerEvents = 'none';
+        }
+        
+        function checkUITimeout() {
+            if (Date.now() - state.lastMouseMove > 5000) {
+                hideUI();
+            }
+        }
+        
+        function handleMouseMove() {
+            state.lastMouseMove = Date.now();
+            if (!state.uiVisible) {
+                showUI();
+            }
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            state.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            state.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        });
+        
+        canvas.addEventListener('mousedown', () => {
+            state.isMouseDown = true;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            state.isMouseDown = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            state.mouseX = -100;
+            state.mouseY = -100;
+            state.isMouseDown = false;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            state.mouseX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+            state.mouseY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+        }, { passive: false });
+        
+        canvas.addEventListener('touchstart', () => {
+            state.isMouseDown = true;
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            state.isMouseDown = false;
+        });
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11' || e.key === 'f') {
+                handleMouseMove();
+            }
+        });
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        setInterval(checkUITimeout, 1000);
+        
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
+        
+        resizeCanvas();
+        gameLoop();
     </script>
 </body>
 </html>
