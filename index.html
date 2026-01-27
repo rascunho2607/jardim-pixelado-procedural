@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jardim Pixel - Versão Avançada</title>
+    <title>Jardim Pixel - Versão Otimizada com Chunks</title>
     <style>
         * { 
             margin: 0; 
@@ -259,6 +259,16 @@
             background: rgba(74, 222, 128, 0.3);
         }
         
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #93c5fd;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 768px) {
             .panel { 
                 width: 100vw; 
@@ -302,6 +312,29 @@
                 <button class="pause" id="pauseBtn" onclick="togglePause()">⏸ Pausar</button>
                 <button class="reset" onclick="resetGarden()">🔄 Reset</button>
                 <button class="rain" id="rainBtn" onclick="toggleRain()">🌧️ Chuva</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>⚡ Otimização de Chunks</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Tamanho do Chunk</span>
+                    <span class="value" id="val_chunkSize">16x16</span>
+                </div>
+                <input type="range" min="8" max="64" step="8" value="16" 
+                       oninput="updateConfig('chunkSize', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Chunks por Frame</span>
+                    <span class="value" id="val_chunksPerFrame">4</span>
+                </div>
+                <input type="range" min="1" max="16" step="1" value="4" 
+                       oninput="updateConfig('chunksPerFrame', this.value)">
+            </div>
+            <div class="info-box">
+                💡 <strong>Chunks</strong> dividem o processamento em partes menores para melhor performance. Aumente se tiver FPS alto, diminua se estiver travando.
             </div>
         </div>
         
@@ -449,6 +482,10 @@
                     <span id="stat_splashes">0</span>
                 </div>
                 <div class="stat">
+                    <span>📦 Total de Chunks</span>
+                    <span id="stat_chunks">0</span>
+                </div>
+                <div class="stat">
                     <span>⚡ FPS</span>
                     <span id="stat_fps">60</span>
                 </div>
@@ -472,6 +509,10 @@
             particles: 100,
             maxFireflies: 200,
             
+            // Configurações de chunks
+            chunkSize: 16,
+            chunksPerFrame: 4,
+            
             // Configurações avançadas de chuva
             rainIntensity: 50,
             dropSize: 1,
@@ -491,6 +532,12 @@
             splashes: [],
             impacts: [],
             fireflyPool: [],
+            
+            // Sistema de chunks
+            chunks: [],
+            chunkCols: 0,
+            chunkRows: 0,
+            currentChunkIndex: 0,
             
             isGrowing: true,
             isRaining: false,
@@ -553,6 +600,35 @@
         }
         
         // ============================================
+        // SISTEMA DE CHUNKS
+        // ============================================
+        
+        class Chunk {
+            constructor(x, y, size) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.startCol = x * size;
+                this.startRow = y * size;
+                this.endCol = Math.min(this.startCol + size, state.cols);
+                this.endRow = Math.min(this.startRow + size, state.rows);
+            }
+        }
+        
+        function initializeChunks() {
+            state.chunkCols = Math.ceil(state.cols / config.chunkSize);
+            state.chunkRows = Math.ceil(state.rows / config.chunkSize);
+            state.chunks = [];
+            state.currentChunkIndex = 0;
+            
+            for (let cy = 0; cy < state.chunkRows; cy++) {
+                for (let cx = 0; cx < state.chunkCols; cx++) {
+                    state.chunks.push(new Chunk(cx, cy, config.chunkSize));
+                }
+            }
+        }
+        
+        // ============================================
         // INICIALIZAÇÃO
         // ============================================
         
@@ -593,6 +669,8 @@
             state.raindrops = [];
             state.splashes = [];
             state.impacts = [];
+            
+            initializeChunks();
         }
         
         // ============================================
@@ -703,17 +781,17 @@
         }
         
         // ============================================
-        // ATUALIZAÇÃO
+        // ATUALIZAÇÃO COM SISTEMA DE CHUNKS
         // ============================================
         
-        function updateGrass() {
+        function updateChunk(chunk) {
             const mouseGridX = Math.floor(state.mouseX / config.gridSize);
             const mouseGridY = Math.floor(state.mouseY / config.gridSize);
             const interactionRadius = 5;
             const radiusSquared = interactionRadius * interactionRadius;
             
-            for (let x = 0; x < state.cols; x++) {
-                for (let y = 0; y < state.rows; y++) {
+            for (let x = chunk.startCol; x < chunk.endCol; x++) {
+                for (let y = chunk.startRow; y < chunk.endRow; y++) {
                     const cell = state.grass[x][y];
                     if (!cell.active) continue;
                     
@@ -753,6 +831,15 @@
                     }
                 }
             }
+        }
+        
+        function updateGrassChunked() {
+            // Atualizar chunks de forma intercalada
+            for (let i = 0; i < config.chunksPerFrame; i++) {
+                const chunk = state.chunks[state.currentChunkIndex];
+                updateChunk(chunk);
+                state.currentChunkIndex = (state.currentChunkIndex + 1) % state.chunks.length;
+            }
             
             // Aplicar impactos da chuva
             for (const impact of state.impacts) {
@@ -774,7 +861,6 @@
                             const distance = Math.sqrt(distanceSquared);
                             const influence = (1 - distance / radius) * impact.force;
                             
-                            // Direção radial a partir do ponto de impacto
                             const angle = Math.atan2(dy, dx);
                             cell.impactSway += influence * Math.cos(angle) * 2;
                             cell.wetness = Math.min(1, cell.wetness + 0.3);
@@ -825,25 +911,21 @@
         }
         
         function updateRain() {
-            // Criar novas gotas
             if (state.isRaining && Math.random() * 100 < config.rainIntensity) {
                 createRaindrop();
             }
             
-            // Atualizar gotas existentes
             for (let i = state.raindrops.length - 1; i >= 0; i--) {
                 const drop = state.raindrops[i];
                 
                 drop.x += drop.vx * config.speed;
                 drop.y += drop.vy * config.speed;
                 
-                // Verificar colisão com o chão ou grama
                 const gridX = Math.floor(drop.x / config.gridSize);
                 const gridY = Math.floor(drop.y / config.gridSize);
                 
                 let shouldRemove = false;
                 
-                // Colisão com grama
                 if (gridX >= 0 && gridX < state.cols && gridY >= 0 && gridY < state.rows) {
                     const cell = state.grass[gridX][gridY];
                     
@@ -859,7 +941,6 @@
                     }
                 }
                 
-                // Colisão com o chão (fundo do canvas)
                 if (drop.y >= canvas.height - 5) {
                     if (!drop.hasHit) {
                         createSplash(drop.x, canvas.height - 5);
@@ -870,7 +951,6 @@
                     shouldRemove = true;
                 }
                 
-                // Remover gotas que saíram da tela horizontalmente
                 if (drop.x < -20 || drop.x > canvas.width + 20) {
                     shouldRemove = true;
                 }
@@ -908,7 +988,7 @@
         }
         
         function update() {
-            updateGrass();
+            updateGrassChunked();
             updateFlowers();
             updateFireflies();
             updateRain();
@@ -963,14 +1043,12 @@
                         
                         let [r, g, b] = GRASS_COLORS[colorIdx];
                         
-                        // Efeito de destaque perto do mouse
                         if (isNearMouse && h > cell.height * 0.7) {
                             r = Math.min(255, r + 50);
                             g = Math.min(255, g + 50);
                             b = Math.min(255, b + 50);
                         }
                         
-                        // Efeito de umidade
                         if (cell.wetness > 0) {
                             const wetFactor = cell.wetness * 0.3;
                             r = Math.max(0, r * (1 - wetFactor));
@@ -1082,6 +1160,7 @@
             document.getElementById('stat_fireflies').textContent = state.fireflies.length;
             document.getElementById('stat_rain').textContent = state.raindrops.length;
             document.getElementById('stat_splashes').textContent = state.splashes.length;
+            document.getElementById('stat_chunks').textContent = state.chunks.length;
         }
         
         // ============================================
@@ -1138,6 +1217,15 @@
             const valueNum = parseFloat(value);
             
             const configMap = {
+                chunkSize: () => {
+                    config.chunkSize = valueNum;
+                    document.getElementById('val_chunkSize').textContent = valueNum + 'x' + valueNum;
+                    initializeChunks();
+                },
+                chunksPerFrame: () => {
+                    config.chunksPerFrame = valueNum;
+                    document.getElementById('val_chunksPerFrame').textContent = valueNum;
+                },
                 gridSize: () => {
                     config.gridSize = valueNum;
                     document.getElementById('val_gridSize').textContent = valueNum + 'px';
@@ -1199,6 +1287,8 @@
         function applyPreset(presetName) {
             const presets = {
                 low: {
+                    chunkSize: 32,
+                    chunksPerFrame: 2,
                     gridSize: 6,
                     density: 50,
                     height: 0.8,
@@ -1212,6 +1302,8 @@
                     splashAmount: 3
                 },
                 medium: {
+                    chunkSize: 16,
+                    chunksPerFrame: 4,
                     gridSize: 4,
                     density: 75,
                     height: 1,
@@ -1225,6 +1317,8 @@
                     splashAmount: 5
                 },
                 high: {
+                    chunkSize: 12,
+                    chunksPerFrame: 6,
                     gridSize: 3,
                     density: 100,
                     height: 1.2,
@@ -1238,6 +1332,8 @@
                     splashAmount: 7
                 },
                 ultra: {
+                    chunkSize: 8,
+                    chunksPerFrame: 8,
                     gridSize: 2,
                     density: 100,
                     height: 1.5,
@@ -1251,6 +1347,8 @@
                     splashAmount: 10
                 },
                 retro: {
+                    chunkSize: 32,
+                    chunksPerFrame: 2,
                     gridSize: 8,
                     density: 60,
                     height: 0.6,
@@ -1264,6 +1362,8 @@
                     splashAmount: 2
                 },
                 storm: {
+                    chunkSize: 16,
+                    chunksPerFrame: 6,
                     gridSize: 3,
                     density: 100,
                     height: 1,
@@ -1284,19 +1384,23 @@
             Object.assign(config, preset);
             
             const inputs = document.querySelectorAll('input[type="range"]');
-            inputs[0].value = config.gridSize;
-            inputs[1].value = config.density;
-            inputs[2].value = config.height;
-            inputs[3].value = config.rainIntensity;
-            inputs[4].value = config.dropSize;
-            inputs[5].value = config.rainSpeed;
-            inputs[6].value = config.windForce;
-            inputs[7].value = config.impactForce;
-            inputs[8].value = config.splashAmount;
-            inputs[9].value = config.speed;
-            inputs[10].value = config.particles;
-            inputs[11].value = config.maxFireflies;
+            inputs[0].value = config.chunkSize;
+            inputs[1].value = config.chunksPerFrame;
+            inputs[2].value = config.gridSize;
+            inputs[3].value = config.density;
+            inputs[4].value = config.height;
+            inputs[5].value = config.rainIntensity;
+            inputs[6].value = config.dropSize;
+            inputs[7].value = config.rainSpeed;
+            inputs[8].value = config.windForce;
+            inputs[9].value = config.impactForce;
+            inputs[10].value = config.splashAmount;
+            inputs[11].value = config.speed;
+            inputs[12].value = config.particles;
+            inputs[13].value = config.maxFireflies;
             
+            document.getElementById('val_chunkSize').textContent = config.chunkSize + 'x' + config.chunkSize;
+            document.getElementById('val_chunksPerFrame').textContent = config.chunksPerFrame;
             document.getElementById('val_gridSize').textContent = config.gridSize + 'px';
             document.getElementById('val_density').textContent = config.density + '%';
             document.getElementById('val_height').textContent = config.height.toFixed(1) + 'x';
