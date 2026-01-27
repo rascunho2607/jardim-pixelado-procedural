@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jardim Pixel - Versão Otimizada com Chunks</title>
+    <title>Jardim Pixel - PixiJS Otimizado</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
     <style>
         * { 
             margin: 0; 
@@ -22,7 +23,6 @@
         #pixelGarden {
             display: block;
             cursor: crosshair;
-            image-rendering: pixelated;
             width: 100vw;
             height: 100vh;
         }
@@ -297,7 +297,7 @@
     </style>
 </head>
 <body>
-    <canvas id="pixelGarden"></canvas>
+    <div id="pixelGarden"></div>
     <div class="config-btn" onclick="togglePanel()">⚙️</div>
     
     <div class="panel" id="panel">
@@ -492,14 +492,48 @@
             </div>
         </div>
     </div>
-
+    
     <script>
-        // ============================================
-        // CONFIGURAÇÃO E ESTADO GLOBAL
-        // ============================================
+        const app = new PIXI.Application({
+            background: '#2a1810',
+            resizeTo: window,
+            antialias: false,
+            resolution: 1
+        });
         
-        const canvas = document.getElementById('pixelGarden');
-        const ctx = canvas.getContext('2d', { alpha: false });
+        document.getElementById('pixelGarden').appendChild(app.view);
+        
+        const backgroundContainer = new PIXI.Container();
+        const grassContainer = new PIXI.Container();
+        const flowerContainer = new PIXI.Container();
+        const fireflyContainer = new PIXI.ParticleContainer(500, {
+            scale: true,
+            position: true,
+            rotation: false,
+            tint: true,
+            alpha: true
+        });
+        const rainContainer = new PIXI.ParticleContainer(1000, {
+            scale: true,
+            position: true,
+            rotation: true,
+            tint: false,
+            alpha: true
+        });
+        const splashContainer = new PIXI.ParticleContainer(500, {
+            scale: true,
+            position: true,
+            rotation: false,
+            tint: false,
+            alpha: true
+        });
+        
+        app.stage.addChild(backgroundContainer);
+        app.stage.addChild(grassContainer);
+        app.stage.addChild(flowerContainer);
+        app.stage.addChild(fireflyContainer);
+        app.stage.addChild(rainContainer);
+        app.stage.addChild(splashContainer);
         
         const config = {
             gridSize: 4,
@@ -508,12 +542,8 @@
             speed: 1,
             particles: 100,
             maxFireflies: 200,
-            
-            // Configurações de chunks
             chunkSize: 16,
             chunksPerFrame: 4,
-            
-            // Configurações avançadas de chuva
             rainIntensity: 50,
             dropSize: 1,
             rainSpeed: 1,
@@ -532,33 +562,25 @@
             splashes: [],
             impacts: [],
             fireflyPool: [],
-            
-            // Sistema de chunks
+            raindropPool: [],
+            splashPool: [],
             chunks: [],
             chunkCols: 0,
             chunkRows: 0,
             currentChunkIndex: 0,
-            
             isGrowing: true,
             isRaining: false,
-            
             mouseX: -100,
             mouseY: -100,
             isMouseDown: false,
-            
             time: 0,
             fps: 60,
             lastTime: performance.now(),
             frames: 0,
             fpsTime: 0,
-            
             uiVisible: true,
             lastMouseMove: Date.now()
         };
-        
-        // ============================================
-        // CORES E CACHE
-        // ============================================
         
         const GRASS_COLORS = [
             [26, 77, 46],
@@ -599,9 +621,79 @@
             return cosCache[Math.floor(normalized) % 360];
         }
         
-        // ============================================
-        // SISTEMA DE CHUNKS
-        // ============================================
+        function rgbToHex(r, g, b) {
+            return (r << 16) | (g << 8) | b;
+        }
+        
+        let grassTextures = [];
+        let raindropTexture = null;
+        let fireflyTexture = null;
+        let splashTexture = null;
+        let backgroundParticles = null;
+        
+        function createGrassTextures(gridSize) {
+            const textures = [];
+            const maxHeight = 64;
+            
+            for (let colorIdx = 0; colorIdx < GRASS_COLORS.length; colorIdx++) {
+                const canvas = document.createElement('canvas');
+                canvas.width = gridSize;
+                canvas.height = maxHeight;
+                const ctx = canvas.getContext('2d');
+                
+                for (let h = 0; h < maxHeight; h++) {
+                    const progress = h / maxHeight;
+                    const blendedColorIdx = Math.min(
+                        Math.floor(progress * GRASS_COLORS.length),
+                        GRASS_COLORS.length - 1
+                    );
+                    
+                    const [r, g, b] = GRASS_COLORS[blendedColorIdx];
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fillRect(0, maxHeight - h - 1, gridSize, 1);
+                }
+                
+                textures.push(PIXI.Texture.from(canvas));
+            }
+            
+            return textures;
+        }
+        
+        function createRaindropTexture(width, height) {
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(0x96c8ff);
+            graphics.drawRect(0, 0, width, height);
+            graphics.endFill();
+            return app.renderer.generateTexture(graphics);
+        }
+        
+        function createFireflyTexture(size) {
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(0x66ccff);
+            graphics.drawRect(0, 0, size, size);
+            graphics.endFill();
+            return app.renderer.generateTexture(graphics);
+        }
+        
+        function createSplashTexture(size) {
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(0x96c8ff);
+            graphics.drawRect(0, 0, size, size);
+            graphics.endFill();
+            return app.renderer.generateTexture(graphics);
+        }
+        
+        function createBackgroundParticles() {
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(0x3c281e, 0.15);
+            for (let i = 0; i < config.particles; i++) {
+                const x = (Math.random() * app.screen.width) | 0;
+                const y = (Math.random() * app.screen.height) | 0;
+                graphics.drawRect(x, y, 2, 2);
+            }
+            graphics.endFill();
+            return graphics;
+        }
         
         class Chunk {
             constructor(x, y, size) {
@@ -628,26 +720,35 @@
             }
         }
         
-        // ============================================
-        // INICIALIZAÇÃO
-        // ============================================
-        
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initializeGarden();
-        }
-        
         function initializeGarden() {
-            state.cols = Math.floor(canvas.width / config.gridSize);
-            state.rows = Math.floor(canvas.height / config.gridSize);
+            state.cols = Math.floor(app.screen.width / config.gridSize);
+            state.rows = Math.floor(app.screen.height / config.gridSize);
             state.grass = new Array(state.cols);
             
+            grassContainer.removeChildren();
+            flowerContainer.removeChildren();
+            fireflyContainer.removeChildren();
+            rainContainer.removeChildren();
+            splashContainer.removeChildren();
+            backgroundContainer.removeChildren();
+            
+            grassTextures = createGrassTextures(config.gridSize);
+            raindropTexture = createRaindropTexture(2, 10);
+            fireflyTexture = createFireflyTexture(3);
+            splashTexture = createSplashTexture(2);
+            
+            if (config.particles > 0) {
+                backgroundParticles = createBackgroundParticles();
+                backgroundContainer.addChild(backgroundParticles);
+            }
+            
+            let activeCount = 0;
             for (let x = 0; x < state.cols; x++) {
                 state.grass[x] = new Array(state.rows);
                 for (let y = 0; y < state.rows; y++) {
                     const isActive = Math.random() * 100 < config.density;
-                    state.grass[x][y] = {
+                    
+                    const cell = {
                         height: isActive ? Math.random() * 3 : 0,
                         maxHeight: isActive ? (8 + Math.random() * 12) * config.height : 0,
                         growthRate: 0.02 + Math.random() * 0.03,
@@ -659,8 +760,22 @@
                         active: isActive,
                         wetness: 0,
                         impactSway: 0,
-                        impactDecay: 0.85
+                        impactDecay: 0.85,
+                        sprite: null
                     };
+                    
+                    if (isActive) {
+                        const sprite = new PIXI.Sprite(grassTextures[cell.colorIndex]);
+                        sprite.anchor.set(0.5, 1);
+                        sprite.x = x * config.gridSize + config.gridSize / 2;
+                        sprite.y = y * config.gridSize;
+                        sprite.height = 0;
+                        grassContainer.addChild(sprite);
+                        cell.sprite = sprite;
+                        activeCount++;
+                    }
+                    
+                    state.grass[x][y] = cell;
                 }
             }
             
@@ -673,22 +788,64 @@
             initializeChunks();
         }
         
-        // ============================================
-        // CRIAÇÃO DE ENTIDADES
-        // ============================================
-        
         function getFirefly() {
             if (state.fireflyPool.length > 0) {
-                const firefly = state.fireflyPool.pop();
-                firefly.trail = [];
-                return firefly;
+                return state.fireflyPool.pop();
             }
-            return { trail: [] };
+            return {
+                x: 0, y: 0, vx: 0, vy: 0,
+                size: 0, alpha: 0, pulseSpeed: 0, life: 0,
+                trail: [],
+                sprite: new PIXI.Sprite(fireflyTexture)
+            };
         }
         
         function releaseFirefly(firefly) {
+            if (firefly.sprite) {
+                firefly.sprite.visible = false;
+            }
             if (state.fireflyPool.length < config.maxFireflies) {
                 state.fireflyPool.push(firefly);
+            }
+        }
+        
+        function getRaindrop() {
+            if (state.raindropPool.length > 0) {
+                return state.raindropPool.pop();
+            }
+            return {
+                x: 0, y: 0, vx: 0, vy: 0,
+                length: 0, width: 0, alpha: 0, hasHit: false,
+                sprite: new PIXI.Sprite(raindropTexture)
+            };
+        }
+        
+        function releaseRaindrop(drop) {
+            if (drop.sprite) {
+                drop.sprite.visible = false;
+            }
+            if (state.raindropPool.length < 1000) {
+                state.raindropPool.push(drop);
+            }
+        }
+        
+        function getSplash() {
+            if (state.splashPool.length > 0) {
+                return state.splashPool.pop();
+            }
+            return {
+                x: 0, y: 0, vx: 0, vy: 0,
+                size: 0, alpha: 0, life: 0, gravity: 0,
+                sprite: new PIXI.Sprite(splashTexture)
+            };
+        }
+        
+        function releaseSplash(splash) {
+            if (splash.sprite) {
+                splash.sprite.visible = false;
+            }
+            if (state.splashPool.length < 500) {
+                state.splashPool.push(splash);
             }
         }
         
@@ -699,24 +856,27 @@
             const speed = 1 + Math.random() * 2;
             const firefly = getFirefly();
             
-            Object.assign(firefly, {
-                x: state.mouseX + (Math.random() - 0.5) * 20,
-                y: state.mouseY + (Math.random() - 0.5) * 20,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                size: 1 + Math.random() * 2,
-                alpha: 0.7 + Math.random() * 0.3,
-                pulseSpeed: 3 + Math.random() * 4,
-                life: 100 + Math.random() * 50,
-                trail: []
-            });
+            firefly.x = state.mouseX + (Math.random() - 0.5) * 20;
+            firefly.y = state.mouseY + (Math.random() - 0.5) * 20;
+            firefly.vx = Math.cos(angle) * speed;
+            firefly.vy = Math.sin(angle) * speed;
+            firefly.size = 1 + Math.random() * 2;
+            firefly.alpha = 0.7 + Math.random() * 0.3;
+            firefly.pulseSpeed = 3 + Math.random() * 4;
+            firefly.life = 100 + Math.random() * 50;
+            firefly.trail = [];
+            
+            firefly.sprite.visible = true;
+            firefly.sprite.anchor.set(0.5);
+            firefly.sprite.scale.set(firefly.size);
+            fireflyContainer.addChild(firefly.sprite);
             
             state.fireflies.push(firefly);
         }
         
         function createFlower() {
             if (Math.random() > 0.98 && state.flowers.length < 50) {
-                state.flowers.push({
+                const flower = {
                     x: Math.random() * state.cols,
                     y: Math.random() * state.rows,
                     height: 0,
@@ -725,8 +885,12 @@
                     colorIndex: Math.floor(Math.random() * FLOWER_COLORS.length),
                     petalSize: 2 + Math.random() * 2,
                     rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.02
-                });
+                    rotationSpeed: (Math.random() - 0.5) * 0.02,
+                    graphics: new PIXI.Graphics()
+                };
+                
+                flowerContainer.addChild(flower.graphics);
+                state.flowers.push(flower);
             }
         }
         
@@ -734,17 +898,24 @@
             if (!state.isRaining) return;
             
             const baseLength = 8 + Math.random() * 8;
+            const drop = getRaindrop();
             
-            state.raindrops.push({
-                x: Math.random() * canvas.width,
-                y: -5,
-                vx: config.windForce * 0.5,
-                vy: (8 + Math.random() * 4) * config.rainSpeed,
-                length: baseLength * config.dropSize,
-                width: Math.max(1, config.dropSize),
-                alpha: 0.3 + Math.random() * 0.3,
-                hasHit: false
-            });
+            drop.x = Math.random() * app.screen.width;
+            drop.y = -5;
+            drop.vx = config.windForce * 0.5;
+            drop.vy = (8 + Math.random() * 4) * config.rainSpeed;
+            drop.length = baseLength * config.dropSize;
+            drop.width = Math.max(1, config.dropSize);
+            drop.alpha = 0.3 + Math.random() * 0.3;
+            drop.hasHit = false;
+            
+            drop.sprite.visible = true;
+            drop.sprite.anchor.set(0.5, 1);
+            drop.sprite.alpha = drop.alpha;
+            drop.sprite.scale.set(drop.width, drop.length);
+            rainContainer.addChild(drop.sprite);
+            
+            state.raindrops.push(drop);
         }
         
         function createSplash(x, y) {
@@ -753,36 +924,37 @@
             for (let i = 0; i < numParticles; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 2 + Math.random() * 4;
+                const splash = getSplash();
                 
-                state.splashes.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2,
-                    size: 1 + Math.random() * 2,
-                    alpha: 0.6 + Math.random() * 0.4,
-                    life: 20 + Math.random() * 10,
-                    gravity: 0.3
-                });
+                splash.x = x;
+                splash.y = y;
+                splash.vx = Math.cos(angle) * speed;
+                splash.vy = Math.sin(angle) * speed - 2;
+                splash.size = 1 + Math.random() * 2;
+                splash.alpha = 0.6 + Math.random() * 0.4;
+                splash.life = 20 + Math.random() * 10;
+                splash.gravity = 0.3;
+                
+                splash.sprite.visible = true;
+                splash.sprite.anchor.set(0.5);
+                splash.sprite.scale.set(splash.size);
+                splash.sprite.alpha = splash.alpha;
+                splashContainer.addChild(splash.sprite);
+                
+                state.splashes.push(splash);
             }
         }
         
         function createImpact(gridX, gridY, force) {
-            const impact = {
+            state.impacts.push({
                 gridX: gridX,
                 gridY: gridY,
                 radius: 3,
                 force: force * config.impactForce,
                 life: 15,
                 maxLife: 15
-            };
-            
-            state.impacts.push(impact);
+            });
         }
-        
-        // ============================================
-        // ATUALIZAÇÃO COM SISTEMA DE CHUNKS
-        // ============================================
         
         function updateChunk(chunk) {
             const mouseGridX = Math.floor(state.mouseX / config.gridSize);
@@ -795,26 +967,22 @@
                     const cell = state.grass[x][y];
                     if (!cell.active) continue;
                     
-                    // Crescimento
                     if (state.isGrowing && cell.height < cell.maxHeight) {
                         cell.height += cell.growthRate * config.speed;
                     }
                     
-                    // Decaimento do balanço normal
                     if (cell.sway > 0.1) {
                         cell.sway *= cell.swayDecay;
                     } else {
                         cell.sway = 0;
                     }
                     
-                    // Decaimento do balanço de impacto
                     if (cell.impactSway > 0.1) {
                         cell.impactSway *= cell.impactDecay;
                     } else {
                         cell.impactSway = 0;
                     }
                     
-                    // Interação com mouse
                     const dx = x - mouseGridX;
                     const dy = y - mouseGridY;
                     const distanceSquared = dx * dx + dy * dy;
@@ -825,7 +993,6 @@
                         cell.sway = Math.max(cell.sway, influence * 0.7);
                     }
                     
-                    // Decaimento de umidade
                     if (cell.wetness > 0) {
                         cell.wetness = Math.max(0, cell.wetness - 0.01 * config.speed);
                     }
@@ -834,14 +1001,12 @@
         }
         
         function updateGrassChunked() {
-            // Atualizar chunks de forma intercalada
             for (let i = 0; i < config.chunksPerFrame; i++) {
                 const chunk = state.chunks[state.currentChunkIndex];
                 updateChunk(chunk);
                 state.currentChunkIndex = (state.currentChunkIndex + 1) % state.chunks.length;
             }
             
-            // Aplicar impactos da chuva
             for (const impact of state.impacts) {
                 const centerX = impact.gridX;
                 const centerY = impact.gridY;
@@ -900,8 +1065,8 @@
                 firefly.trail.push({ x: firefly.x, y: firefly.y });
                 if (firefly.trail.length > 10) firefly.trail.shift();
                 
-                const isOutOfBounds = firefly.x < -10 || firefly.x > canvas.width + 10 ||
-                                     firefly.y < -10 || firefly.y > canvas.height + 10;
+                const isOutOfBounds = firefly.x < -10 || firefly.x > app.screen.width + 10 ||
+                                     firefly.y < -10 || firefly.y > app.screen.height + 10;
                 
                 if (firefly.life <= 0 || isOutOfBounds) {
                     releaseFirefly(firefly);
@@ -941,9 +1106,9 @@
                     }
                 }
                 
-                if (drop.y >= canvas.height - 5) {
+                if (drop.y >= app.screen.height - 5) {
                     if (!drop.hasHit) {
-                        createSplash(drop.x, canvas.height - 5);
+                        createSplash(drop.x, app.screen.height - 5);
                         if (gridX >= 0 && gridX < state.cols) {
                             createImpact(gridX, state.rows - 1, 2);
                         }
@@ -951,11 +1116,12 @@
                     shouldRemove = true;
                 }
                 
-                if (drop.x < -20 || drop.x > canvas.width + 20) {
+                if (drop.x < -20 || drop.x > app.screen.width + 20) {
                     shouldRemove = true;
                 }
                 
                 if (shouldRemove) {
+                    releaseRaindrop(drop);
                     state.raindrops.splice(i, 1);
                 }
             }
@@ -970,7 +1136,8 @@
                 splash.vy += splash.gravity * config.speed;
                 splash.life -= config.speed;
                 
-                if (splash.life <= 0 || splash.y > canvas.height) {
+                if (splash.life <= 0 || splash.y > app.screen.height) {
+                    releaseSplash(splash);
                     state.splashes.splice(i, 1);
                 }
             }
@@ -987,33 +1154,6 @@
             }
         }
         
-        function update() {
-            updateGrassChunked();
-            updateFlowers();
-            updateFireflies();
-            updateRain();
-            updateSplashes();
-            updateImpacts();
-        }
-        
-        // ============================================
-        // RENDERIZAÇÃO
-        // ============================================
-        
-        function renderBackground() {
-            ctx.fillStyle = '#2a1810';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            if (config.particles > 0) {
-                ctx.fillStyle = 'rgba(60, 40, 30, 0.15)';
-                for (let i = 0; i < config.particles; i++) {
-                    const x = (Math.random() * canvas.width) | 0;
-                    const y = (Math.random() * canvas.height) | 0;
-                    ctx.fillRect(x, y, 2, 2);
-                }
-            }
-        }
-        
         function renderGrass() {
             let activeCount = 0;
             const mouseGridX = Math.floor(state.mouseX / config.gridSize);
@@ -1022,42 +1162,33 @@
             for (let x = 0; x < state.cols; x++) {
                 for (let y = 0; y < state.rows; y++) {
                     const cell = state.grass[x][y];
-                    if (!cell.active || cell.height <= 0) continue;
+                    if (!cell.active || !cell.sprite) continue;
                     
+                    if (cell.height <= 0) {
+                        cell.sprite.visible = false;
+                        continue;
+                    }
+                    
+                    cell.sprite.visible = true;
                     activeCount++;
                     
                     const baseSway = fastSin(state.time * cell.swaySpeed + cell.offset) * 2;
                     const totalSway = baseSway + cell.sway + cell.impactSway;
-                    const baseX = x * config.gridSize;
-                    const baseY = y * config.gridSize;
                     const isNearMouse = Math.abs(x - mouseGridX) <= 2 && Math.abs(y - mouseGridY) <= 2;
                     
-                    const cellHeight = cell.height | 0;
-                    for (let h = 0; h < cellHeight; h++) {
-                        const screenY = baseY - h;
-                        const swayOffset = (h / cell.height) * totalSway;
-                        const colorIdx = Math.min(
-                            ((h / cell.maxHeight) * GRASS_COLORS.length) | 0,
-                            GRASS_COLORS.length - 1
-                        );
-                        
-                        let [r, g, b] = GRASS_COLORS[colorIdx];
-                        
-                        if (isNearMouse && h > cell.height * 0.7) {
-                            r = Math.min(255, r + 50);
-                            g = Math.min(255, g + 50);
-                            b = Math.min(255, b + 50);
-                        }
-                        
-                        if (cell.wetness > 0) {
-                            const wetFactor = cell.wetness * 0.3;
-                            r = Math.max(0, r * (1 - wetFactor));
-                            g = Math.max(0, g * (1 - wetFactor) + 20 * wetFactor);
-                            b = Math.max(0, b * (1 - wetFactor) + 40 * wetFactor);
-                        }
-                        
-                        ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
-                        ctx.fillRect((baseX + swayOffset) | 0, screenY, config.gridSize, 1);
+                    cell.sprite.height = cell.height;
+                    cell.sprite.rotation = (totalSway / cell.height) * 0.3;
+                    
+                    if (isNearMouse && cell.height > cell.maxHeight * 0.7) {
+                        cell.sprite.tint = 0xbbffbb;
+                    } else if (cell.wetness > 0) {
+                        const wetFactor = cell.wetness;
+                        const r = Math.floor(GRASS_COLORS[cell.colorIndex][0] * (1 - wetFactor * 0.3));
+                        const g = Math.floor(GRASS_COLORS[cell.colorIndex][1] * (1 - wetFactor * 0.3) + 20 * wetFactor);
+                        const b = Math.floor(GRASS_COLORS[cell.colorIndex][2] * (1 - wetFactor * 0.3) + 40 * wetFactor);
+                        cell.sprite.tint = rgbToHex(r, g, b);
+                    } else {
+                        cell.sprite.tint = 0xffffff;
                     }
                 }
             }
@@ -1067,14 +1198,17 @@
         
         function renderFlowers() {
             for (const flower of state.flowers) {
+                flower.graphics.clear();
+                
                 if (flower.height <= 5) continue;
                 
                 const baseX = (flower.x * config.gridSize) | 0;
                 const baseY = (flower.y * config.gridSize) | 0;
                 const stemHeight = flower.height | 0;
                 
-                ctx.fillStyle = '#2d5a3d';
-                ctx.fillRect(baseX, baseY - stemHeight, 2, stemHeight);
+                flower.graphics.beginFill(0x2d5a3d);
+                flower.graphics.drawRect(baseX, baseY - stemHeight, 2, stemHeight);
+                flower.graphics.endFill();
                 
                 if (flower.height >= flower.maxHeight * 0.8) {
                     const flowerTop = baseY - stemHeight;
@@ -1085,17 +1219,19 @@
                         const petalX = baseX + fastCos(angle) * flower.petalSize * 2;
                         const petalY = flowerTop + fastSin(angle) * flower.petalSize * 2;
                         
-                        ctx.fillStyle = `rgb(${r},${g},${b})`;
-                        ctx.fillRect(
+                        flower.graphics.beginFill(rgbToHex(r, g, b));
+                        flower.graphics.drawRect(
                             petalX | 0, 
                             petalY | 0, 
                             Math.ceil(flower.petalSize), 
                             Math.ceil(flower.petalSize)
                         );
+                        flower.graphics.endFill();
                     }
                     
-                    ctx.fillStyle = '#ffdd44';
-                    ctx.fillRect(baseX - 1, flowerTop - 1, 3, 3);
+                    flower.graphics.beginFill(0xffdd44);
+                    flower.graphics.drawRect(baseX - 1, flowerTop - 1, 3, 3);
+                    flower.graphics.endFill();
                 }
             }
         }
@@ -1104,70 +1240,33 @@
             for (const firefly of state.fireflies) {
                 const pulse = fastSin(state.time * firefly.pulseSpeed) * 0.3 + 0.7;
                 
-                for (let i = 0; i < firefly.trail.length; i++) {
-                    const trailPoint = firefly.trail[i];
-                    const trailAlpha = (i / firefly.trail.length) * firefly.alpha * 0.5;
-                    ctx.fillStyle = `rgba(102, 204, 255, ${trailAlpha})`;
-                    ctx.fillRect(trailPoint.x | 0, trailPoint.y | 0, 1, 1);
-                }
-                
-                ctx.fillStyle = `rgba(102, 204, 255, ${firefly.alpha * pulse})`;
-                ctx.fillRect(
-                    (firefly.x - firefly.size / 2) | 0,
-                    (firefly.y - firefly.size / 2) | 0,
-                    firefly.size | 0,
-                    firefly.size | 0
-                );
+                firefly.sprite.x = firefly.x;
+                firefly.sprite.y = firefly.y;
+                firefly.sprite.alpha = firefly.alpha * pulse;
             }
         }
         
         function renderRain() {
-            ctx.lineCap = 'round';
-            
             for (const drop of state.raindrops) {
-                ctx.strokeStyle = `rgba(150, 200, 255, ${drop.alpha})`;
-                ctx.lineWidth = drop.width;
-                ctx.beginPath();
-                ctx.moveTo(drop.x, drop.y);
-                ctx.lineTo(drop.x - drop.vx * 2, drop.y - drop.length);
-                ctx.stroke();
+                drop.sprite.x = drop.x;
+                drop.sprite.y = drop.y;
+                
+                const angle = Math.atan2(drop.vy, drop.vx);
+                drop.sprite.rotation = angle + Math.PI / 2;
             }
         }
         
         function renderSplashes() {
             for (const splash of state.splashes) {
+                splash.sprite.x = splash.x;
+                splash.sprite.y = splash.y;
+                
                 const fadeAlpha = (splash.life / 30) * splash.alpha;
-                ctx.fillStyle = `rgba(150, 200, 255, ${fadeAlpha})`;
-                ctx.fillRect(
-                    (splash.x - splash.size / 2) | 0,
-                    (splash.y - splash.size / 2) | 0,
-                    splash.size | 0,
-                    splash.size | 0
-                );
+                splash.sprite.alpha = fadeAlpha;
             }
         }
         
-        function render() {
-            renderBackground();
-            const grassCount = renderGrass();
-            renderFlowers();
-            renderFireflies();
-            renderRain();
-            renderSplashes();
-            
-            document.getElementById('stat_grass').textContent = grassCount;
-            document.getElementById('stat_flowers').textContent = state.flowers.length;
-            document.getElementById('stat_fireflies').textContent = state.fireflies.length;
-            document.getElementById('stat_rain').textContent = state.raindrops.length;
-            document.getElementById('stat_splashes').textContent = state.splashes.length;
-            document.getElementById('stat_chunks').textContent = state.chunks.length;
-        }
-        
-        // ============================================
-        // LOOP PRINCIPAL
-        // ============================================
-        
-        function gameLoop() {
+        app.ticker.add(() => {
             const now = performance.now();
             const delta = now - state.lastTime;
             state.lastTime = now;
@@ -1183,14 +1282,27 @@
             }
             
             state.time += 0.016 * config.speed;
-            update();
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // ============================================
-        // CONTROLES DA UI
-        // ============================================
+            
+            updateGrassChunked();
+            updateFlowers();
+            updateFireflies();
+            updateRain();
+            updateSplashes();
+            updateImpacts();
+            
+            const grassCount = renderGrass();
+            renderFlowers();
+            renderFireflies();
+            renderRain();
+            renderSplashes();
+            
+            document.getElementById('stat_grass').textContent = grassCount;
+            document.getElementById('stat_flowers').textContent = state.flowers.length;
+            document.getElementById('stat_fireflies').textContent = state.fireflies.length;
+            document.getElementById('stat_rain').textContent = state.raindrops.length;
+            document.getElementById('stat_splashes').textContent = state.splashes.length;
+            document.getElementById('stat_chunks').textContent = state.chunks.length;
+        });
         
         function togglePanel() {
             document.getElementById('panel').classList.toggle('open');
@@ -1248,6 +1360,11 @@
                 particles: () => {
                     config.particles = valueNum;
                     document.getElementById('val_particles').textContent = valueNum;
+                    backgroundContainer.removeChildren();
+                    if (valueNum > 0) {
+                        backgroundParticles = createBackgroundParticles();
+                        backgroundContainer.addChild(backgroundParticles);
+                    }
                 },
                 maxFireflies: () => {
                     config.maxFireflies = valueNum;
@@ -1417,10 +1534,6 @@
             initializeGarden();
         }
         
-        // ============================================
-        // SISTEMA DE AUTO-HIDE DA UI
-        // ============================================
-        
         function showUI() {
             state.uiVisible = true;
             const btn = document.querySelector('.config-btn');
@@ -1451,43 +1564,39 @@
             }
         }
         
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
-        
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            state.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-            state.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        app.view.addEventListener('mousemove', (e) => {
+            const rect = app.view.getBoundingClientRect();
+            state.mouseX = e.clientX - rect.left;
+            state.mouseY = e.clientY - rect.top;
         });
         
-        canvas.addEventListener('mousedown', () => {
+        app.view.addEventListener('mousedown', () => {
             state.isMouseDown = true;
         });
         
-        canvas.addEventListener('mouseup', () => {
+        app.view.addEventListener('mouseup', () => {
             state.isMouseDown = false;
         });
         
-        canvas.addEventListener('mouseleave', () => {
+        app.view.addEventListener('mouseleave', () => {
             state.mouseX = -100;
             state.mouseY = -100;
             state.isMouseDown = false;
         });
         
-        canvas.addEventListener('touchmove', (e) => {
+        app.view.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
+            const rect = app.view.getBoundingClientRect();
             const touch = e.touches[0];
-            state.mouseX = (touch.clientX - rect.left) * (canvas.width / rect.width);
-            state.mouseY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+            state.mouseX = touch.clientX - rect.left;
+            state.mouseY = touch.clientY - rect.top;
         }, { passive: false });
         
-        canvas.addEventListener('touchstart', () => {
+        app.view.addEventListener('touchstart', () => {
             state.isMouseDown = true;
         });
         
-        canvas.addEventListener('touchend', () => {
+        app.view.addEventListener('touchend', () => {
             state.isMouseDown = false;
         });
         
@@ -1499,16 +1608,9 @@
             }
         });
         
-        window.addEventListener('resize', resizeCanvas);
-        
         setInterval(checkUITimeout, 1000);
         
-        // ============================================
-        // INICIALIZAÇÃO
-        // ============================================
-        
-        resizeCanvas();
-        gameLoop();
+        initializeGarden();
     </script>
 </body>
 </html>
