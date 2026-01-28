@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jardim Pixel - PixiJS Otimizado</title>
+    <title>Jardim Pixel</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
     <style>
         * { 
@@ -163,6 +163,15 @@
             border-radius: 50%;
             border: none;
         }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #374151;
+        }
         
         .btns {
             display: grid;
@@ -312,6 +321,57 @@
                 <button class="pause" id="pauseBtn" onclick="togglePause()">⏸ Pausar</button>
                 <button class="reset" onclick="resetGarden()">🔄 Reset</button>
                 <button class="rain" id="rainBtn" onclick="toggleRain()">🌧️ Chuva</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🕐 Relógio</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Tamanho da Fonte</span>
+                    <span class="value" id="val_clockSize">48px</span>
+                </div>
+                <input type="range" min="8" max="900" step="4" value="48" 
+                       oninput="updateConfig('clockSize', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Grossura da Fonte</span>
+                    <span class="value" id="val_clockWeight">300</span>
+                </div>
+                <input type="range" min="100" max="900" step="100" value="300" 
+                       oninput="updateConfig('clockWeight', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Posição Horizontal</span>
+                    <span class="value" id="val_clockX">-40px</span>
+                </div>
+                <input type="range" min="-8000" max="8000" step="5" value="-40" 
+                       oninput="updateConfig('clockX', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Posição Vertical</span>
+                    <span class="value" id="val_clockY">-40px</span>
+                </div>
+                <input type="range" min="-8000" max="8000" step="5" value="-40" 
+                       oninput="updateConfig('clockY', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Cor</span>
+                </div>
+                <input type="color" value="#d4f4dd" 
+                       oninput="updateConfig('clockColor', this.value)">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Transparência</span>
+                    <span class="value" id="val_clockAlpha">0.30</span>
+                </div>
+                <input type="range" min="0.1" max="1" step="0.05" value="0.30" 
+                       oninput="updateConfig('clockAlpha', this.value)">
             </div>
         </div>
         
@@ -527,6 +587,7 @@
             tint: false,
             alpha: true
         });
+        const clockContainer = new PIXI.Container();
         
         app.stage.addChild(backgroundContainer);
         app.stage.addChild(grassContainer);
@@ -534,6 +595,7 @@
         app.stage.addChild(fireflyContainer);
         app.stage.addChild(rainContainer);
         app.stage.addChild(splashContainer);
+        app.stage.addChild(clockContainer);
         
         const config = {
             gridSize: 4,
@@ -549,7 +611,13 @@
             rainSpeed: 1,
             windForce: 0,
             impactForce: 1,
-            splashAmount: 5
+            splashAmount: 5,
+            clockSize: 48,
+            clockWeight: 300,
+            clockX: -40,
+            clockY: -40,
+            clockColor: '#d4f4dd',
+            clockAlpha: 0.30
         };
         
         const state = {
@@ -579,7 +647,8 @@
             frames: 0,
             fpsTime: 0,
             uiVisible: true,
-            lastMouseMove: Date.now()
+            lastMouseMove: Date.now(),
+            currentMinute: -1
         };
         
         const GRASS_COLORS = [
@@ -624,12 +693,22 @@
         function rgbToHex(r, g, b) {
             return (r << 16) | (g << 8) | b;
         }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 212, g: 244, b: 221 };
+        }
         
         let grassTextures = [];
         let raindropTexture = null;
         let fireflyTexture = null;
         let splashTexture = null;
         let backgroundParticles = null;
+        let clockText = null;
         
         function createGrassTextures(gridSize) {
             const textures = [];
@@ -694,6 +773,54 @@
             graphics.endFill();
             return graphics;
         }
+
+        function createClock() {
+            clockText = new PIXI.Text('', {
+                fontFamily: 'sans-serif',
+                fontSize: config.clockSize,
+                fontWeight: config.clockWeight,
+                fill: config.clockColor,
+                align: 'right'
+            });
+            clockText.anchor.set(1, 1);
+            clockText.alpha = config.clockAlpha;
+            clockContainer.addChild(clockText);
+            updateClockPosition();
+        }
+
+        function updateClockPosition() {
+            if (clockText) {
+                clockText.x = app.screen.width + config.clockX;
+                clockText.y = app.screen.height + config.clockY;
+            }
+        }
+
+        function updateClockStyle() {
+            if (clockText) {
+                clockText.style.fontSize = config.clockSize;
+                clockText.style.fontWeight = config.clockWeight;
+                clockText.style.fill = config.clockColor;
+                clockText.alpha = config.clockAlpha;
+                updateClockPosition();
+            }
+        }
+
+        function updateClock() {
+            if (!clockText) return;
+            
+            const now = new Date();
+            const currentMinute = now.getHours() * 60 + now.getMinutes();
+            
+            if (currentMinute !== state.currentMinute) {
+                state.currentMinute = currentMinute;
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                clockText.text = `${hours}:${minutes}`;
+            }
+            
+            const floatOffset = Math.sin(state.time * 0.3) * 3;
+            clockText.y = app.screen.height + config.clockY + floatOffset;
+        }
         
         class Chunk {
             constructor(x, y, size) {
@@ -731,6 +858,7 @@
             rainContainer.removeChildren();
             splashContainer.removeChildren();
             backgroundContainer.removeChildren();
+            clockContainer.removeChildren();
             
             grassTextures = createGrassTextures(config.gridSize);
             raindropTexture = createRaindropTexture(2, 10);
@@ -741,6 +869,8 @@
                 backgroundParticles = createBackgroundParticles();
                 backgroundContainer.addChild(backgroundParticles);
             }
+
+            createClock();
             
             let activeCount = 0;
             for (let x = 0; x < state.cols; x++) {
@@ -1289,6 +1419,7 @@
             updateRain();
             updateSplashes();
             updateImpacts();
+            updateClock();
             
             const grassCount = renderGrass();
             renderFlowers();
@@ -1329,6 +1460,35 @@
             const valueNum = parseFloat(value);
             
             const configMap = {
+                clockSize: () => {
+                    config.clockSize = valueNum;
+                    document.getElementById('val_clockSize').textContent = valueNum + 'px';
+                    updateClockStyle();
+                },
+                clockWeight: () => {
+                    config.clockWeight = valueNum;
+                    document.getElementById('val_clockWeight').textContent = valueNum;
+                    updateClockStyle();
+                },
+                clockX: () => {
+                    config.clockX = valueNum;
+                    document.getElementById('val_clockX').textContent = valueNum + 'px';
+                    updateClockPosition();
+                },
+                clockY: () => {
+                    config.clockY = valueNum;
+                    document.getElementById('val_clockY').textContent = valueNum + 'px';
+                    updateClockPosition();
+                },
+                clockColor: () => {
+                    config.clockColor = value;
+                    updateClockStyle();
+                },
+                clockAlpha: () => {
+                    config.clockAlpha = valueNum;
+                    document.getElementById('val_clockAlpha').textContent = valueNum.toFixed(2);
+                    updateClockStyle();
+                },
                 chunkSize: () => {
                     config.chunkSize = valueNum;
                     document.getElementById('val_chunkSize').textContent = valueNum + 'x' + valueNum;
@@ -1501,21 +1661,31 @@
             Object.assign(config, preset);
             
             const inputs = document.querySelectorAll('input[type="range"]');
-            inputs[0].value = config.chunkSize;
-            inputs[1].value = config.chunksPerFrame;
-            inputs[2].value = config.gridSize;
-            inputs[3].value = config.density;
-            inputs[4].value = config.height;
-            inputs[5].value = config.rainIntensity;
-            inputs[6].value = config.dropSize;
-            inputs[7].value = config.rainSpeed;
-            inputs[8].value = config.windForce;
-            inputs[9].value = config.impactForce;
-            inputs[10].value = config.splashAmount;
-            inputs[11].value = config.speed;
-            inputs[12].value = config.particles;
-            inputs[13].value = config.maxFireflies;
+            inputs[0].value = config.clockSize;
+            inputs[1].value = config.clockWeight;
+            inputs[2].value = config.clockX;
+            inputs[3].value = config.clockY;
+            inputs[4].value = config.clockAlpha;
+            inputs[5].value = config.chunkSize;
+            inputs[6].value = config.chunksPerFrame;
+            inputs[7].value = config.gridSize;
+            inputs[8].value = config.density;
+            inputs[9].value = config.height;
+            inputs[10].value = config.rainIntensity;
+            inputs[11].value = config.dropSize;
+            inputs[12].value = config.rainSpeed;
+            inputs[13].value = config.windForce;
+            inputs[14].value = config.impactForce;
+            inputs[15].value = config.splashAmount;
+            inputs[16].value = config.speed;
+            inputs[17].value = config.particles;
+            inputs[18].value = config.maxFireflies;
             
+            document.getElementById('val_clockSize').textContent = config.clockSize + 'px';
+            document.getElementById('val_clockWeight').textContent = config.clockWeight;
+            document.getElementById('val_clockX').textContent = config.clockX + 'px';
+            document.getElementById('val_clockY').textContent = config.clockY + 'px';
+            document.getElementById('val_clockAlpha').textContent = config.clockAlpha.toFixed(2);
             document.getElementById('val_chunkSize').textContent = config.chunkSize + 'x' + config.chunkSize;
             document.getElementById('val_chunksPerFrame').textContent = config.chunksPerFrame;
             document.getElementById('val_gridSize').textContent = config.gridSize + 'px';
@@ -1531,6 +1701,7 @@
             document.getElementById('val_particles').textContent = config.particles;
             document.getElementById('val_maxFireflies').textContent = config.maxFireflies;
             
+            updateClockStyle();
             initializeGarden();
         }
         
@@ -1606,6 +1777,10 @@
             if (e.key === 'F11' || e.key === 'f') {
                 handleMouseMove();
             }
+        });
+
+        window.addEventListener('resize', () => {
+            updateClockPosition();
         });
         
         setInterval(checkUITimeout, 1000);
