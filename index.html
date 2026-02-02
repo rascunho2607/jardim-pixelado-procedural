@@ -173,6 +173,95 @@
             background: #374151;
         }
         
+        /* NOVOS ESTILOS - Sistema de Presets */
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .file-btn:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #374151;
+            transition: 0.4s;
+            border-radius: 30px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #4ade80;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .season-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid #4ade80;
+            color: #4ade80;
+            margin-left: 10px;
+        }
+        /* FIM NOVOS ESTILOS */
+        
         .btns {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -323,6 +412,65 @@
                 <button class="rain" id="rainBtn" onclick="toggleRain()">🌧️ Chuva</button>
             </div>
         </div>
+
+        <!-- NOVA SEÇÃO - Cores Customizadas -->
+        <div class="section">
+            <h3>🎨 Cores da Grama</h3>
+            <div class="control">
+                <div class="label">
+                    <span>Cor Clara (Topo)</span>
+                </div>
+                <input type="color" id="lightGrassColor" value="#7daf7e" 
+                       oninput="updateCustomGrassColors()">
+            </div>
+            <div class="control">
+                <div class="label">
+                    <span>Cor Escura (Base)</span>
+                </div>
+                <input type="color" id="darkGrassColor" value="#1a4d2e" 
+                       oninput="updateCustomGrassColors()">
+            </div>
+        </div>
+        <!-- FIM NOVA SEÇÃO -->
+
+        <!-- NOVA SEÇÃO - Modo Automático e Estações -->
+        <div class="section">
+            <h3>🌍 Estações do Ano</h3>
+            <div class="control">
+                <div class="toggle-container">
+                    <span>Modo Automático</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoSeasonToggle" onchange="toggleAutoSeason()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="currentSeasonDisplay" style="margin-top: 10px; color: #86efac; text-align: center;">
+                    Estação atual: <span class="season-indicator" id="seasonName">-</span>
+                </div>
+            </div>
+            <div class="presets">
+                <button class="preset" onclick="applySeasonPreset('spring')">🌸 Primavera</button>
+                <button class="preset" onclick="applySeasonPreset('summer')">☀️ Verão</button>
+                <button class="preset" onclick="applySeasonPreset('autumn')">🍂 Outono</button>
+                <button class="preset" onclick="applySeasonPreset('winter')">❄️ Inverno</button>
+            </div>
+            <div class="info-box">
+                💡 No modo automático, as cores mudam de acordo com a época do ano. Você pode sobrescrever manualmente a qualquer momento.
+            </div>
+        </div>
+        <!-- FIM NOVA SEÇÃO -->
+
+        <!-- NOVA SEÇÃO - Sistema de Presets -->
+        <div class="section">
+            <h3>💾 Gerenciar Presets</h3>
+            <button class="file-btn" onclick="exportPreset()">📤 Exportar Preset</button>
+            <button class="file-btn" onclick="document.getElementById('importPresetFile').click()">📥 Importar Preset</button>
+            <input type="file" id="importPresetFile" accept=".json" onchange="importPreset(event)">
+            <div class="info-box">
+                💡 Seus presets são salvos automaticamente no navegador. Use Exportar/Importar para compartilhar ou fazer backup.
+            </div>
+        </div>
+        <!-- FIM NOVA SEÇÃO -->
 
         <div class="section">
             <h3>🕐 Relógio</h3>
@@ -670,6 +818,352 @@
             [170, 68, 255],
             [68, 68, 255]
         ];
+
+        // ============================================================
+        // NOVO CÓDIGO - Sistema de Cores Customizadas e Estações
+        // ============================================================
+        
+        // Presets de cores para estações
+        const SEASON_PRESETS = {
+            spring: {
+                name: '🌸 Primavera',
+                lightColor: '#7daf7e',
+                darkColor: '#1a4d2e'
+            },
+            summer: {
+                name: '☀️ Verão',
+                lightColor: '#9ed99c',
+                darkColor: '#2d5a3d'
+            },
+            autumn: {
+                name: '🍂 Outono',
+                lightColor: '#d4a574',
+                darkColor: '#8b5a3c'
+            },
+            winter: {
+                name: '❄️ Inverno',
+                lightColor: '#b8d4d4',
+                darkColor: '#4a6b6b'
+            }
+        };
+
+        // Estado adicional para gerenciar cores customizadas
+        const customColorState = {
+            isAutoSeasonEnabled: false,
+            currentSeason: null,
+            customLightColor: '#7daf7e',
+            customDarkColor: '#1a4d2e',
+            isUsingCustomColors: false
+        };
+
+        // Função para detectar a estação atual baseada na data
+        function detectCurrentSeason() {
+            const now = new Date();
+            const month = now.getMonth() + 1; // getMonth() retorna 0-11
+            
+            // Hemisfério Sul (Brasil)
+            if (month >= 9 && month <= 11) return 'spring';      // Set-Nov
+            if (month >= 12 || month <= 2) return 'summer';       // Dez-Fev
+            if (month >= 3 && month <= 5) return 'autumn';        // Mar-Mai
+            if (month >= 6 && month <= 8) return 'winter';        // Jun-Ago
+            
+            return 'spring';
+        }
+
+        // Função para aplicar preset de estação
+        function applySeasonPreset(seasonKey) {
+            const preset = SEASON_PRESETS[seasonKey];
+            if (!preset) return;
+            
+            // Desativa o modo automático quando o usuário escolhe manualmente
+            customColorState.isAutoSeasonEnabled = false;
+            document.getElementById('autoSeasonToggle').checked = false;
+            
+            customColorState.customLightColor = preset.lightColor;
+            customColorState.customDarkColor = preset.darkColor;
+            customColorState.currentSeason = seasonKey;
+            customColorState.isUsingCustomColors = true;
+            
+            // Atualiza os color pickers
+            document.getElementById('lightGrassColor').value = preset.lightColor;
+            document.getElementById('darkGrassColor').value = preset.darkColor;
+            
+            // Atualiza o indicador de estação
+            document.getElementById('seasonName').textContent = preset.name;
+            
+            // Regenera as texturas e o jardim
+            regenerateGrassWithCustomColors();
+            
+            // Salva automaticamente
+            savePresetToLocalStorage();
+        }
+
+        // Função para alternar modo automático de estações
+        function toggleAutoSeason() {
+            customColorState.isAutoSeasonEnabled = document.getElementById('autoSeasonToggle').checked;
+            
+            if (customColorState.isAutoSeasonEnabled) {
+                // Aplica a estação atual automaticamente
+                const currentSeason = detectCurrentSeason();
+                applySeasonPreset(currentSeason);
+                customColorState.isAutoSeasonEnabled = true; // Reativa após applySeasonPreset desativar
+                document.getElementById('autoSeasonToggle').checked = true;
+            }
+            
+            savePresetToLocalStorage();
+        }
+
+        // Função para atualizar cores customizadas em tempo real
+        function updateCustomGrassColors() {
+            customColorState.customLightColor = document.getElementById('lightGrassColor').value;
+            customColorState.customDarkColor = document.getElementById('darkGrassColor').value;
+            customColorState.isUsingCustomColors = true;
+            
+            // Desativa o modo automático quando o usuário customiza manualmente
+            customColorState.isAutoSeasonEnabled = false;
+            document.getElementById('autoSeasonToggle').checked = false;
+            customColorState.currentSeason = null;
+            document.getElementById('seasonName').textContent = 'Customizado';
+            
+            // Regenera as texturas e o jardim
+            regenerateGrassWithCustomColors();
+            
+            // Salva automaticamente
+            savePresetToLocalStorage();
+        }
+
+        // Função para converter hex para RGB
+        function hexToRgbArray(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : [125, 175, 126];
+        }
+
+        // Função para interpolar entre duas cores
+        function interpolateColor(color1, color2, factor) {
+            return [
+                Math.round(color1[0] + (color2[0] - color1[0]) * factor),
+                Math.round(color1[1] + (color2[1] - color1[1]) * factor),
+                Math.round(color1[2] + (color2[2] - color1[2]) * factor)
+            ];
+        }
+
+        // Função para gerar paleta de cores baseada em duas cores
+        function generateGrassColorPalette(darkColorHex, lightColorHex) {
+            const darkRgb = hexToRgbArray(darkColorHex);
+            const lightRgb = hexToRgbArray(lightColorHex);
+            
+            const palette = [];
+            const steps = 7; // Mesmo número de cores do GRASS_COLORS original
+            
+            for (let i = 0; i < steps; i++) {
+                const factor = i / (steps - 1);
+                palette.push(interpolateColor(darkRgb, lightRgb, factor));
+            }
+            
+            return palette;
+        }
+
+        // Função para regenerar texturas da grama com cores customizadas
+        function regenerateGrassWithCustomColors() {
+            if (!customColorState.isUsingCustomColors) return;
+            
+            // Gera nova paleta
+            const newPalette = generateGrassColorPalette(
+                customColorState.customDarkColor,
+                customColorState.customLightColor
+            );
+            
+            // Substitui temporariamente GRASS_COLORS
+            const originalColors = [...GRASS_COLORS];
+            GRASS_COLORS.length = 0;
+            GRASS_COLORS.push(...newPalette);
+            
+            // Recria as texturas
+            grassTextures = createGrassTextures(config.gridSize);
+            
+            // Atualiza todos os sprites de grama existentes
+            for (let x = 0; x < state.cols; x++) {
+                for (let y = 0; y < state.rows; y++) {
+                    const cell = state.grass[x][y];
+                    if (cell && cell.active && cell.sprite) {
+                        cell.sprite.texture = grassTextures[cell.colorIndex];
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // NOVO CÓDIGO - Sistema de Presets (Importar/Exportar)
+        // ============================================================
+
+        // Função para criar objeto de preset com todas as configurações
+        function createPresetObject() {
+            return {
+                version: '1.0',
+                config: {...config},
+                customColors: {
+                    isAutoSeasonEnabled: customColorState.isAutoSeasonEnabled,
+                    currentSeason: customColorState.currentSeason,
+                    customLightColor: customColorState.customLightColor,
+                    customDarkColor: customColorState.customDarkColor,
+                    isUsingCustomColors: customColorState.isUsingCustomColors
+                }
+            };
+        }
+
+        // Função para aplicar preset a partir de objeto
+        function applyPresetObject(presetObj) {
+            // Aplica configurações gerais
+            if (presetObj.config) {
+                Object.assign(config, presetObj.config);
+            }
+            
+            // Aplica cores customizadas se existirem
+            if (presetObj.customColors) {
+                Object.assign(customColorState, presetObj.customColors);
+                
+                // Atualiza UI
+                document.getElementById('lightGrassColor').value = customColorState.customLightColor;
+                document.getElementById('darkGrassColor').value = customColorState.customDarkColor;
+                document.getElementById('autoSeasonToggle').checked = customColorState.isAutoSeasonEnabled;
+                
+                if (customColorState.currentSeason && SEASON_PRESETS[customColorState.currentSeason]) {
+                    document.getElementById('seasonName').textContent = SEASON_PRESETS[customColorState.currentSeason].name;
+                } else if (customColorState.isUsingCustomColors) {
+                    document.getElementById('seasonName').textContent = 'Customizado';
+                } else {
+                    document.getElementById('seasonName').textContent = '-';
+                }
+            }
+            
+            // Atualiza todos os controles da UI
+            updateAllUIControls();
+            
+            // Regenera o jardim
+            if (customColorState.isUsingCustomColors) {
+                regenerateGrassWithCustomColors();
+            } else {
+                initializeGarden();
+            }
+        }
+
+        // Função para atualizar todos os controles da UI
+        function updateAllUIControls() {
+            const inputs = document.querySelectorAll('input[type="range"]');
+            inputs[0].value = config.clockSize;
+            inputs[1].value = config.clockWeight;
+            inputs[2].value = config.clockX;
+            inputs[3].value = config.clockY;
+            inputs[4].value = config.clockAlpha;
+            inputs[5].value = config.chunkSize;
+            inputs[6].value = config.chunksPerFrame;
+            inputs[7].value = config.gridSize;
+            inputs[8].value = config.density;
+            inputs[9].value = config.height;
+            inputs[10].value = config.rainIntensity;
+            inputs[11].value = config.dropSize;
+            inputs[12].value = config.rainSpeed;
+            inputs[13].value = config.windForce;
+            inputs[14].value = config.impactForce;
+            inputs[15].value = config.splashAmount;
+            inputs[16].value = config.speed;
+            inputs[17].value = config.particles;
+            inputs[18].value = config.maxFireflies;
+            
+            document.getElementById('val_clockSize').textContent = config.clockSize + 'px';
+            document.getElementById('val_clockWeight').textContent = config.clockWeight;
+            document.getElementById('val_clockX').textContent = config.clockX + 'px';
+            document.getElementById('val_clockY').textContent = config.clockY + 'px';
+            document.getElementById('val_clockAlpha').textContent = config.clockAlpha.toFixed(2);
+            document.getElementById('val_chunkSize').textContent = config.chunkSize + 'x' + config.chunkSize;
+            document.getElementById('val_chunksPerFrame').textContent = config.chunksPerFrame;
+            document.getElementById('val_gridSize').textContent = config.gridSize + 'px';
+            document.getElementById('val_density').textContent = config.density + '%';
+            document.getElementById('val_height').textContent = config.height.toFixed(1) + 'x';
+            document.getElementById('val_rainIntensity').textContent = config.rainIntensity;
+            document.getElementById('val_dropSize').textContent = config.dropSize.toFixed(1) + 'x';
+            document.getElementById('val_rainSpeed').textContent = config.rainSpeed.toFixed(1) + 'x';
+            document.getElementById('val_windForce').textContent = config.windForce.toFixed(1);
+            document.getElementById('val_impactForce').textContent = config.impactForce.toFixed(1) + 'x';
+            document.getElementById('val_splashAmount').textContent = config.splashAmount;
+            document.getElementById('val_speed').textContent = config.speed.toFixed(1) + 'x';
+            document.getElementById('val_particles').textContent = config.particles;
+            document.getElementById('val_maxFireflies').textContent = config.maxFireflies;
+            
+            updateClockStyle();
+        }
+
+        // Função para salvar preset no localStorage
+        function savePresetToLocalStorage() {
+            try {
+                const preset = createPresetObject();
+                localStorage.setItem('jardimPixelPreset', JSON.stringify(preset));
+            } catch (e) {
+                console.error('Erro ao salvar preset no localStorage:', e);
+            }
+        }
+
+        // Função para carregar preset do localStorage
+        function loadPresetFromLocalStorage() {
+            try {
+                const savedPreset = localStorage.getItem('jardimPixelPreset');
+                if (savedPreset) {
+                    const presetObj = JSON.parse(savedPreset);
+                    applyPresetObject(presetObj);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Erro ao carregar preset do localStorage:', e);
+            }
+            return false;
+        }
+
+        // Função para exportar preset como arquivo
+        function exportPreset() {
+            const preset = createPresetObject();
+            const dataStr = JSON.stringify(preset, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'jardim-pixel-preset.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+
+        // Função para importar preset de arquivo
+        function importPreset(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const presetObj = JSON.parse(e.target.result);
+                    applyPresetObject(presetObj);
+                    savePresetToLocalStorage();
+                    alert('Preset importado com sucesso!');
+                } catch (error) {
+                    alert('Erro ao importar preset. Verifique se o arquivo é válido.');
+                    console.error('Erro ao importar preset:', error);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Limpa o input para permitir reimportar o mesmo arquivo
+            event.target.value = '';
+        }
+
+        // ============================================================
+        // FIM DO NOVO CÓDIGO
+        // ============================================================
+
         
         const sinCache = new Float32Array(360);
         const cosCache = new Float32Array(360);
@@ -1085,6 +1579,7 @@
                 maxLife: 15
             });
         }
+
         
         function updateChunk(chunk) {
             const mouseGridX = Math.floor(state.mouseX / config.gridSize);
@@ -1395,6 +1890,7 @@
                 splash.sprite.alpha = fadeAlpha;
             }
         }
+
         
         app.ticker.add(() => {
             const now = performance.now();
@@ -1559,6 +2055,9 @@
             if (configMap[key]) {
                 configMap[key]();
             }
+            
+            // NOVO: Salva automaticamente após cada mudança de configuração
+            savePresetToLocalStorage();
         }
         
         function applyPreset(presetName) {
@@ -1703,6 +2202,9 @@
             
             updateClockStyle();
             initializeGarden();
+            
+            // NOVO: Salva automaticamente após aplicar preset
+            savePresetToLocalStorage();
         }
         
         function showUI() {
@@ -1785,7 +2287,32 @@
         
         setInterval(checkUITimeout, 1000);
         
-        initializeGarden();
+        // ============================================================
+        // NOVO CÓDIGO - Inicialização com carregamento automático
+        // ============================================================
+        
+        // Tenta carregar preset salvo ao iniciar
+        const presetLoaded = loadPresetFromLocalStorage();
+        
+        // Se não houver preset salvo, inicializa normalmente
+        if (!presetLoaded) {
+            initializeGarden();
+            
+            // Define valores padrão para cores customizadas
+            document.getElementById('lightGrassColor').value = customColorState.customLightColor;
+            document.getElementById('darkGrassColor').value = customColorState.customDarkColor;
+            document.getElementById('seasonName').textContent = '-';
+        }
+        
+        // Verifica se deve aplicar modo automático de estação ao iniciar
+        if (customColorState.isAutoSeasonEnabled) {
+            const currentSeason = detectCurrentSeason();
+            if (currentSeason !== customColorState.currentSeason) {
+                applySeasonPreset(currentSeason);
+                customColorState.isAutoSeasonEnabled = true;
+                document.getElementById('autoSeasonToggle').checked = true;
+            }
+        }
     </script>
 </body>
 </html>
